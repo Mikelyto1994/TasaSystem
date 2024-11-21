@@ -1,0 +1,60 @@
+datasource db {
+  provider = "postgresql"  // Cambia esto si usas otro tipo de base de datos
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  areaId      Int
+  username       String   @unique
+  password    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  area        Area     @relation(fields: [areaId], references: [id])
+  movements   Movimiento[]  // Actualizado a Movimiento
+  // Nuevas columnas para el periodo permitido
+  periodoInicio DateTime // Fecha de inicio del periodo permitido
+  periodoFin    DateTime // Fecha de fin del periodo permitido
+}
+
+
+
+model Area {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  users       User[]
+}
+
+model Movimiento {
+  id            Int      @id @default(autoincrement())
+  fecha         DateTime @default(now())  // Fecha del movimiento
+  tipoMovimiento TipoMovimiento  // Campo de tipo enum (ingreso o egreso)
+  descripcion   String   // Descripción del movimiento
+  monto         Float    // Monto del movimiento
+  imageUrl      String?  // URL de la imagen (si se sube una)
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  
+  images        Image[]  @relation("MovementImages") // Relación con Image
+}
+
+model Image {
+  id          Int      @id @default(autoincrement())
+  url         String   // URL de la imagen
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  movements   Movimiento[]  @relation("MovementImages")
+}
+
+
+// Definir el enum para los tipos de movimiento
+enum TipoMovimiento {
+  ingreso
+  egreso
+}
