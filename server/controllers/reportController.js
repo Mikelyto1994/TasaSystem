@@ -53,6 +53,15 @@ const createMovement = async (req, res) => {
           const uploadResponse = cloudinary.uploader.upload_stream(
             {
               folder: "images_Tesoreria", // Configuración de Cloudinary
+              transformation: [
+                {
+                  width: 800,
+                  height: 600,
+                  crop: "limit",
+                  quality: "auto",
+                  fetch_format: "auto",
+                },
+              ], // Redimensiona y optimiza la imagen automáticamente
             },
             (error, result) => {
               if (error) {
@@ -170,7 +179,16 @@ const updateMovementImage = async (req, res) => {
       return new Promise((resolve, reject) => {
         const uploadResponse = cloudinary.uploader.upload_stream(
           {
-            folder: "images_Tesoreria",
+            folder: "images_Tesoreria", // Configuración de Cloudinary
+            transformation: [
+              {
+                width: 800,
+                height: 600,
+                crop: "limit",
+                quality: "auto",
+                fetch_format: "auto",
+              },
+            ], // Redimensiona y optimiza la imagen automáticamente
           },
           (error, result) => {
             if (error) {

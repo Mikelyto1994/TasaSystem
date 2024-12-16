@@ -5,6 +5,9 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 // Login
 export const loginUser = async (username, password) => {
   try {
+    // Imprimir los datos de usuario y contraseña antes de enviarlos al backend
+    console.log("Enviando al backend:", { username, password });
+
     // Enviar las credenciales al backend para hacer login
     const response = await axiosInstance.post("/login", {
       username,

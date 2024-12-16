@@ -22,7 +22,10 @@ const useAuth = (setAuthenticated) => {
         if (expirationTime < Date.now()) {
           // Si el token ya expiró
           setAuthenticated(false);
+          localStorage.removeItem("periodoInicio");
+          localStorage.removeItem("periodoFin");
           localStorage.removeItem("token");
+          localStorage.removeItem("userName");
           navigate("/login");
         } else {
           setAuthenticated(true);

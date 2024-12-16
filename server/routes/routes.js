@@ -28,4 +28,7 @@ router.delete(
   reportController.deleteMovement
 );
 
+// Ruta para obtener la información de un usuario sin autenticación
+router.get("/user", userController.getUser); // No necesita autenticación
+
 module.exports = router;

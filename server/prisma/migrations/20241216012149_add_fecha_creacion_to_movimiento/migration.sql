@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Movimiento" ADD COLUMN     "FechaCreacion" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

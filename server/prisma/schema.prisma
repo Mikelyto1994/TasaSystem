@@ -8,20 +8,22 @@ generator client {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  firstName   String
-  lastName    String
-  areaId      Int
-  username       String   @unique
-  password    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  area        Area     @relation(fields: [areaId], references: [id])
-  movements   Movimiento[]  // Actualizado a Movimiento
-  // Nuevas columnas para el periodo permitido
-  periodoInicio DateTime // Fecha de inicio del periodo permitido
-  periodoFin    DateTime // Fecha de fin del periodo permitido
+  id            Int      @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  areaId        Int
+  username      String   @unique
+  password      String   // Asegúrate de encriptar la contraseña en el backend
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isAdmin       Boolean  @default(false)  // Campo para identificar si el usuario es administrador
+  isDeleted     Boolean  @default(false)  // Campo para marcar si el usuario está deshabilitado
+  area          Area     @relation(fields: [areaId], references: [id])
+  movements     Movimiento[]  // Relación con el modelo Movimiento
+  periodoInicio DateTime  // Fecha de inicio del periodo permitido
+  periodoFin    DateTime  // Fecha de fin del periodo permitido
 }
+
 
 
 
@@ -32,17 +34,21 @@ model Area {
 }
 
 model Movimiento {
-  id            Int      @id @default(autoincrement())
-  fecha         DateTime @default(now())  // Fecha del movimiento
-  tipoMovimiento TipoMovimiento  // Campo de tipo enum (ingreso o egreso)
-  descripcion   String   // Descripción del movimiento
-  monto         Float    // Monto del movimiento
-  imageUrl      String?  // URL de la imagen (si se sube una)
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
+  id              Int          @id @default(autoincrement())
+  fecha           DateTime     @default(now())  // Fecha del movimiento
+  tipoMovimiento  TipoMovimiento  // Campo de tipo enum (ingreso o egreso)
+  descripcion     String       // Descripción del movimiento
+  monto           Float        // Monto del movimiento
+  imageUrl        String?      // URL de la imagen (si se sube una)
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
   
-  images        Image[]  @relation("MovementImages") // Relación con Image
+  images          Image[]      @relation("MovementImages") // Relación con Image
+  
+  // Nueva columna FechaCreacion
+  FechaCreacion   DateTime     @default(now())  // Fecha y hora de la creación del movimiento
 }
+
 
 model Image {
   id          Int      @id @default(autoincrement())

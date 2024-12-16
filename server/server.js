@@ -28,6 +28,30 @@ app.use(express.json());
 app.post("/register", authController.register);
 app.post("/login", authController.login);
 
+// Ruta GET /user para obtener los usuarios, incluyendo la contraseña (para pruebas)
+app.get("/user", async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      // Usamos findMany para obtener todos los usuarios
+      include: {
+        area: true, // Incluir la información relacionada con 'area'
+      },
+    });
+
+    if (!users || users.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No hay usuarios en la base de datos" });
+    }
+
+    // Devolver los usuarios incluyendo la contraseña para pruebas
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error al obtener los usuarios:", error);
+    res.status(500).json({ message: "Error al obtener los usuarios" });
+  }
+});
+
 // Ruta para crear un movimiento (con imagen)
 app.post(
   "/movimiento",
