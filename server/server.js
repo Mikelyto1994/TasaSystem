@@ -6,6 +6,7 @@ const reportController = require("./controllers/reportController");
 const upload = require("./config/multer"); // Importa el middleware multer configurado
 const cors = require("cors");
 const cloudinary = require("./config/cloudinary"); // Importa Cloudinary configurado
+const { prismaMiddleware } = require("./middlewares/prismaMiddleware"); // Importa el middleware
 
 const app = express();
 
@@ -20,6 +21,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const prisma = new PrismaClient();
+
+// Aplicar el middleware de Prisma
+prisma.$use(prismaMiddleware); // Aplica el middleware aquí
 
 // Middleware para parsear JSON en las solicitudes
 app.use(express.json());

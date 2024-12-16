@@ -1,6 +1,11 @@
 const cloudinary = require("../config/cloudinary"); // Importa la configuración de Cloudinary
 const { PrismaClient } = require("@prisma/client");
+const { prismaMiddleware } = require("../middlewares/prismaMiddleware"); // Asegúrate de que la ruta sea correcta
+
 const prisma = new PrismaClient();
+
+// Registrar el middleware de Prisma
+prisma.$use(prismaMiddleware);
 
 const createMovement = async (req, res) => {
   const { tipoMovimiento, descripcion, monto, fecha } = req.body;
@@ -109,7 +114,6 @@ const createMovement = async (req, res) => {
     return res.status(500).send("Error al crear el movimiento");
   }
 };
-
 const getMovements = async (req, res) => {
   const { tipoMovimiento, startDate, endDate } = req.query;
 
