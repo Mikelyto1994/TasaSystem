@@ -1,0 +1,5 @@
+# No redirigir la página principal
+/    /index.html   200
+
+# Redirigir todas las demás rutas a la página principal
+/*    https://ieptesoreria.netlify.app/   301!
