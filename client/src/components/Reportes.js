@@ -170,10 +170,9 @@ const Reportes = () => {
     formData.append("image", image);
 
     try {
-      const response = await updateMovementImage(
-        selectedMovimiento.id,
-        formData
-      );
+      // Llamada a la función que actualiza la imagen, sin guardar la respuesta
+      await updateMovementImage(selectedMovimiento.id, formData);
+
       toast.success("Imagen cargada correctamente.");
 
       // Llamamos a refreshReport para obtener los movimientos actualizados
