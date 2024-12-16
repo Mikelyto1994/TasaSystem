@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createMovement } from "../services/api"; // Asegúrate que esta función haga la solicitud al backend
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -9,7 +9,6 @@ const Movimientos = () => {
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState("");
   const [image, setImage] = useState(null);
-  const [error, setError] = useState("");
 
   // Obtener periodoInicio y periodoFin desde localStorage
   const periodoInicio = localStorage.getItem("periodoInicio");
@@ -36,16 +35,10 @@ const Movimientos = () => {
       return;
     }
 
-    const formatDate = (date, addOneDay = false) => {
+    const formatDate = (date) => {
       const d = new Date(date);
-
-      // Si se quiere agregar un día, sumamos 1 al día
-      if (addOneDay) {
-        d.setDate(d.getDate() + 1); // Sumamos un día
-      }
-
-      const day = d.getDate().toString().padStart(2, "0"); // Día con dos dígitos
-      const month = (d.getMonth() + 1).toString().padStart(2, "0"); // Mes con dos dígitos
+      const day = (d.getDate() + 1).toString().padStart(2, "0"); // Asegura que siempre tenga dos dígitos
+      const month = (d.getMonth() + 1).toString().padStart(2, "0"); // Los meses son 0-indexados, por eso sumamos 1
       const year = d.getFullYear();
 
       return `${day}-${month}-${year}`;
@@ -61,15 +54,9 @@ const Movimientos = () => {
 
       const selectedDate = new Date(fecha);
 
-      // Asegurarnos de comparar solo la parte de la fecha, sin las horas
-      startDate.setHours(0, 0, 0, 0); // Poner la hora a las 00:00
-      endDate.setHours(23, 59, 59, 999); // Poner la hora a las 23:59:59.999
-      selectedDate.setHours(0, 0, 0, 0); // Poner la hora a las 00:00
-
       if (selectedDate < startDate || selectedDate > endDate) {
-        // Formateamos las fechas y les agregamos un día extra para mostrarlas
-        const formattedStartDate = formatDate(periodoInicio, true); // Agregar un día
-        const formattedEndDate = formatDate(periodoFin, true); // Agregar un día
+        const formattedStartDate = formatDate(periodoInicio);
+        const formattedEndDate = formatDate(periodoFin);
 
         toast.error(
           `La fecha está fuera de tu periodo: ${formattedStartDate} al ${formattedEndDate}`
@@ -95,7 +82,7 @@ const Movimientos = () => {
 
     try {
       // Intentar crear el movimiento enviando el FormData al backend
-      const response = await createMovement(formData);
+      await createMovement(formData);
 
       // Limpiar el formulario después de agregar el movimiento
       setTipoMovimiento("");
@@ -119,8 +106,6 @@ const Movimientos = () => {
       <h2 className="text-3xl font-semibold text-center text-gray-700 mb-8">
         Registrar Movimiento
       </h2>
-      {/* Mostrar errores de validación */}
-      {error && <div className="text-red-500 text-center mb-4">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label

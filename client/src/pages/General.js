@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axiosInstance from "../axios"; // Asegúrate de importar la instancia correctamente
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -9,11 +7,10 @@ import {
   deleteMovement,
 } from "../services/api"; // Asegúrate de importar las funciones correspondientes
 import Swal from "sweetalert2";
+import axiosInstance from "../axios"; // Asegúrate de importar la instancia correctamente
 
 const General = () => {
-  const [movements, setMovements] = useState([]);
-  const navigate = useNavigate(); // useNavigate inicializado aquí
-  const [filteredMovements, setFilteredMovements] = useState([]);
+  const [filteredMovements, setFilteredMovements] = useState([]); // Solo se usa esta variable
   const [filter, setFilter] = useState({
     type: "", // 'ingreso' o 'egreso'
     startDate: "",
@@ -45,8 +42,7 @@ const General = () => {
         );
       }
 
-      setMovements(response);
-      setFilteredMovements(filtered);
+      setFilteredMovements(filtered); // Usamos 'filteredMovements' para actualizar el estado
       console.log("Movimientos filtrados:", filtered);
     } catch (err) {
       setError("Error al cargar los movimientos");
@@ -127,7 +123,7 @@ const General = () => {
         await deleteImageFromCloudinary(imageUrl); // Función para eliminar imagen de Cloudinary
       }
 
-      setMovements((prevMovements) =>
+      setFilteredMovements((prevMovements) =>
         prevMovements.filter((mov) => mov.id !== movementId)
       );
 
@@ -237,7 +233,7 @@ const General = () => {
               </th>
               <th className="border border-gray-300 px-4 py-2 text-left">
                 Tipo Movimiento
-              </th>{" "}
+              </th>
               <th className="border border-gray-300 px-4 py-2 text-left">
                 Descripción
               </th>
@@ -256,7 +252,7 @@ const General = () => {
             {filteredMovements.length === 0 ? (
               <tr>
                 <td
-                  colSpan="5"
+                  colSpan="6"
                   className="text-center p-4 text-gray-500 italic"
                 >
                   No se encontraron movimientos.
@@ -284,8 +280,6 @@ const General = () => {
                       {movement.monto}
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
-                      {console.log("imageUrl:", movement.imageUrl)}{" "}
-                      {/* Esto te ayudará a ver el valor de imageUrl */}
                       {movement.imageUrl ? (
                         <a
                           href={movement.imageUrl}

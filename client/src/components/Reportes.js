@@ -48,22 +48,23 @@ const Reportes = () => {
     setLoading(true);
 
     try {
-      const response = await getMovements({
+      // Directly extract and process the data from the API call
+      const data = await getMovements({
         startDate: startDateString,
         endDate: endDateString,
       });
 
-      const ingresosTotal = response
+      const ingresosTotal = data
         .filter((mov) => mov.tipoMovimiento === "ingreso")
         .reduce((sum, mov) => sum + mov.monto, 0);
 
-      const egresosTotal = response
+      const egresosTotal = data
         .filter((mov) => mov.tipoMovimiento === "egreso")
         .reduce((sum, mov) => sum + mov.monto, 0);
 
       setIngresos(ingresosTotal);
       setEgresos(egresosTotal);
-      setMovimientos(response);
+      setMovimientos(data);
     } catch (err) {
       toast.error("Error al obtener los reportes.");
       console.error("Error al obtener los reportes:", err);
