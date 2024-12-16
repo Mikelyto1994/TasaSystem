@@ -59,8 +59,6 @@ const App = () => {
           path="/general"
           element={authenticated ? <General /> : <Navigate to="/login" />}
         />
-        {/* Ruta catch-all para manejar rutas no definidas */}
-        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       <Footer />
     </div>
