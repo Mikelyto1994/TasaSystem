@@ -37,9 +37,9 @@ const Movimientos = () => {
 
     const formatDate = (date) => {
       const d = new Date(date);
-      const day = d.getDate().toString().padStart(2, "0"); // Ya no es necesario sumar 1
-      const month = (d.getMonth() + 1).toString().padStart(2, "0"); // Los meses son 0-indexados, por eso sumamos 1
-      const year = d.getFullYear();
+      const day = d.getUTCDate().toString().padStart(2, "0"); // Usar getUTCDate() para obtener el día en UTC
+      const month = (d.getUTCMonth() + 1).toString().padStart(2, "0"); // getUTCMonth() para el mes en UTC
+      const year = d.getUTCFullYear(); // getUTCFullYear() para el año en UTC
 
       return `${day}-${month}-${year}`;
     };
