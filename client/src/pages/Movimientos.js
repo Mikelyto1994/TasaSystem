@@ -37,7 +37,7 @@ const Movimientos = () => {
 
     const formatDate = (date) => {
       const d = new Date(date);
-      const day = (d.getDate() + 1).toString().padStart(2, "0"); // Asegura que siempre tenga dos dígitos
+      const day = d.getDate().toString().padStart(2, "0"); // Ya no es necesario sumar 1
       const month = (d.getMonth() + 1).toString().padStart(2, "0"); // Los meses son 0-indexados, por eso sumamos 1
       const year = d.getFullYear();
 
