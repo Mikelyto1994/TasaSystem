@@ -8,19 +8,21 @@ const cors = require("cors");
 const cloudinary = require("./config/cloudinary"); // Importa Cloudinary configurado
 const { prismaMiddleware } = require("./middlewares/prismaMiddleware"); // Importa el middleware
 
+// Crear una única instancia de PrismaClient para usar en toda la aplicación
+const prisma = new PrismaClient();
+
+// Configuración de la aplicación
 const app = express();
 
 // Configura CORS
 const corsOptions = {
-  origin: "*", // Permite solicitudes de cualquier origen mientras pruebas
+  origin: "*", // Permite solicitudes desde cualquier origen mientras pruebas
   methods: "GET,POST,PUT,DELETE", // Métodos HTTP permitidos
   allowedHeaders: "Content-Type,Authorization", // Encabezados permitidos
 };
 
 // Usa el middleware cors en todas las rutas
 app.use(cors(corsOptions));
-
-const prisma = new PrismaClient();
 
 // Aplicar el middleware de Prisma
 prisma.$use(prismaMiddleware); // Aplica el middleware aquí
@@ -35,8 +37,8 @@ app.post("/login", authController.login);
 // Ruta GET /user para obtener los usuarios, incluyendo la contraseña (para pruebas)
 app.get("/user", async (req, res) => {
   try {
+    // Obtener todos los usuarios de la base de datos
     const users = await prisma.user.findMany({
-      // Usamos findMany para obtener todos los usuarios
       include: {
         area: true, // Incluir la información relacionada con 'area'
       },
@@ -48,7 +50,7 @@ app.get("/user", async (req, res) => {
         .json({ message: "No hay usuarios en la base de datos" });
     }
 
-    // Devolver los usuarios incluyendo la contraseña para pruebas
+    // Devolver los usuarios (incluyendo la contraseña para pruebas)
     res.status(200).json(users);
   } catch (error) {
     console.error("Error al obtener los usuarios:", error);
@@ -75,6 +77,7 @@ app.put(
   reportController.updateMovementImage // Controlador que maneja la actualización de la imagen
 );
 
+// Ruta para obtener los movimientos
 app.get("/movimientos", authenticateJWT, reportController.getMovements);
 
 // Ruta para eliminar un movimiento

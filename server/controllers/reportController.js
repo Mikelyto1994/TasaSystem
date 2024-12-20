@@ -1,5 +1,4 @@
 const cloudinary = require("../config/cloudinary"); // Importa la configuración de Cloudinary
-const { PrismaClient } = require("@prisma/client");
 const { prismaMiddleware } = require("../middlewares/prismaMiddleware"); // Asegúrate de que la ruta sea correcta
 
 const prisma = new PrismaClient();

@@ -1,6 +1,5 @@
 // controllers/userController.js
 
-const { PrismaClient } = require("@prisma/client"); // Prisma Client
 const prisma = new PrismaClient(); // Crear una instancia del cliente
 
 // Obtener los datos de un usuario específico

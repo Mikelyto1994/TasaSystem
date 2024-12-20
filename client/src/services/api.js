@@ -14,12 +14,37 @@ export const loginUser = async (username, password) => {
       password,
     });
 
-    // Guardar el token y las fechas de periodo en localStorage
-    localStorage.setItem("token", response.data.token);
-    localStorage.setItem("periodoInicio", response.data.periodoInicio);
-    localStorage.setItem("periodoFin", response.data.periodoFin);
+    // Recibir la respuesta con el token, periodo y los tiempos de ejecución
+    const {
+      token,
+      periodoInicio,
+      periodoFin,
+      loginTime,
+      bcryptTime,
+      userTime,
+    } = response.data;
 
-    return response.data; // Retorna los datos de la respuesta (token y fechas)
+    // Guardar el token y las fechas de periodo en localStorage
+    localStorage.setItem("token", token);
+    localStorage.setItem("periodoInicio", periodoInicio);
+    localStorage.setItem("periodoFin", periodoFin);
+
+    // Log para ver los tiempos de ejecución (opcional, solo para depuración)
+    console.log(`Tiempo total de login: ${loginTime}ms`);
+    console.log(`Tiempo de comparación de contraseña: ${bcryptTime}ms`);
+    console.log(`Tiempo de consulta del usuario: ${userTime}ms`);
+
+    // Si deseas mostrar los tiempos en la UI, puedes hacer algo con estos valores aquí
+
+    // Retorna los datos de la respuesta (token, fechas, y tiempos)
+    return {
+      token,
+      periodoInicio,
+      periodoFin,
+      loginTime,
+      bcryptTime,
+      userTime,
+    };
   } catch (error) {
     console.error(
       "Error en el login:",
