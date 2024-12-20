@@ -8,6 +8,11 @@ import Footer from "./components/Footer";
 import Reportes from "./components/Reportes";
 import General from "./pages/General";
 
+// Componente para proteger rutas
+const PrivateRoute = ({ element, authenticated }) => {
+  return authenticated ? element : <Navigate to="/login" />;
+};
+
 const App = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [userName, setUserName] = useState("");
@@ -31,7 +36,10 @@ const App = () => {
         userName={userName}
       />
       <Routes>
+        {/* Ruta pública */}
         <Route path="/" element={<Home />} />
+
+        {/* Ruta de login */}
         <Route
           path="/login"
           element={
@@ -45,19 +53,31 @@ const App = () => {
             )
           }
         />
+
+        {/* Rutas protegidas con el componente PrivateRoute */}
         <Route
           path="/movimientos"
           element={
-            authenticated ? <MovimientosPage /> : <Navigate to="/login" />
+            <PrivateRoute
+              element={<MovimientosPage />}
+              authenticated={authenticated}
+            />
           }
         />
         <Route
           path="/reporte"
-          element={authenticated ? <Reportes /> : <Navigate to="/login" />}
+          element={
+            <PrivateRoute
+              element={<Reportes />}
+              authenticated={authenticated}
+            />
+          }
         />
         <Route
           path="/general"
-          element={authenticated ? <General /> : <Navigate to="/login" />}
+          element={
+            <PrivateRoute element={<General />} authenticated={authenticated} />
+          }
         />
       </Routes>
       <Footer />
