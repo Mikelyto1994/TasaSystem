@@ -5,13 +5,16 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 // Login
 export const loginUser = async (username, password) => {
   try {
-    console.log("Enviando al backend:", { username, password });
-
+    // Enviar las credenciales al backend para hacer login
     const response = await axiosInstance.post("/login", {
       username,
       password,
     });
 
+    // Verifica la respuesta completa
+    console.log("Respuesta del backend:", response.data);
+
+    // Desestructurar la respuesta para obtener los tiempos
     const {
       token,
       periodoInicio,
@@ -21,18 +24,17 @@ export const loginUser = async (username, password) => {
       userTime,
     } = response.data;
 
+    // Verifica si los tiempos vienen correctamente
+    console.log("Tiempo total de login:", loginTime);
+    console.log("Tiempo de comparación de contraseña:", bcryptTime);
+    console.log("Tiempo de consulta del usuario:", userTime);
+
     // Guardar el token y las fechas de periodo en localStorage
     localStorage.setItem("token", token);
     localStorage.setItem("periodoInicio", periodoInicio);
     localStorage.setItem("periodoFin", periodoFin);
 
-    // Log para ver los tiempos de ejecución (opcional, solo para depuración)
-    console.log(`Tiempo total de login: ${loginTime}ms`);
-    console.log(`Tiempo de comparación de contraseña: ${bcryptTime}ms`);
-    console.log(`Tiempo de consulta del usuario: ${userTime}ms`);
-
-    // Si deseas mostrar los tiempos en la UI, puedes hacer algo con estos valores aquí
-
+    // Retorna los datos de la respuesta (token, fechas, y tiempos)
     return {
       token,
       periodoInicio,
@@ -46,11 +48,10 @@ export const loginUser = async (username, password) => {
       "Error en el login:",
       error.response ? error.response.data : error.message
     );
-
-    // Mejor manejo de errores para que el usuario sepa lo que ocurrió
-    const errorMessage = error.response?.data?.error || error.message;
-    alert(`Error al iniciar sesión: ${errorMessage}`);
-    throw new Error(errorMessage);
+    throw new Error(
+      "Error en el login: " +
+        (error.response ? error.response.data.error : error.message)
+    );
   }
 };
 

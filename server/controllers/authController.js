@@ -39,11 +39,9 @@ const register = async (req, res) => {
         .status(409)
         .json({ error: "El nombre de usuario ya está en uso" });
     }
-    res
-      .status(500)
-      .json({
-        error: "Error interno del servidor. Por favor, intenta más tarde",
-      });
+    res.status(500).json({
+      error: "Error interno del servidor. Por favor, intenta más tarde",
+    });
   }
 };
 
@@ -103,7 +101,7 @@ const login = async (req, res) => {
     console.log(`Proceso de login completado en ${totalTime}ms`);
 
     // Enviar el token junto con las fechas del periodo
-    res.status(200).json({
+    return res.status(200).json({
       token,
       periodoInicio: user.periodoInicio,
       periodoFin: user.periodoFin,
@@ -113,7 +111,7 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    res
+    return res
       .status(500)
       .json({ error: "Error al iniciar sesión. Por favor, intenta más tarde" });
   }
