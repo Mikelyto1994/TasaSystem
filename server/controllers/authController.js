@@ -33,7 +33,17 @@ const register = async (req, res) => {
     res.status(201).json({ message: "Usuario creado", user: newUser });
   } catch (error) {
     console.error("Error al crear el usuario:", error);
-    res.status(500).json({ error: "Error al crear el usuario" });
+    if (error.code === "P2002") {
+      // Si el error es por duplicado en Prisma (usuario ya existe)
+      return res
+        .status(409)
+        .json({ error: "El nombre de usuario ya está en uso" });
+    }
+    res
+      .status(500)
+      .json({
+        error: "Error interno del servidor. Por favor, intenta más tarde",
+      });
   }
 };
 
@@ -103,7 +113,9 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    res.status(500).json({ error: "Error al iniciar sesión" });
+    res
+      .status(500)
+      .json({ error: "Error al iniciar sesión. Por favor, intenta más tarde" });
   }
 };
 

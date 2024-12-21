@@ -5,16 +5,13 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 // Login
 export const loginUser = async (username, password) => {
   try {
-    // Imprimir los datos de usuario y contraseña antes de enviarlos al backend
     console.log("Enviando al backend:", { username, password });
 
-    // Enviar las credenciales al backend para hacer login
     const response = await axiosInstance.post("/login", {
       username,
       password,
     });
 
-    // Recibir la respuesta con el token, periodo y los tiempos de ejecución
     const {
       token,
       periodoInicio,
@@ -36,7 +33,6 @@ export const loginUser = async (username, password) => {
 
     // Si deseas mostrar los tiempos en la UI, puedes hacer algo con estos valores aquí
 
-    // Retorna los datos de la respuesta (token, fechas, y tiempos)
     return {
       token,
       periodoInicio,
@@ -50,10 +46,11 @@ export const loginUser = async (username, password) => {
       "Error en el login:",
       error.response ? error.response.data : error.message
     );
-    throw new Error(
-      "Error en el login: " +
-        (error.response ? error.response.data.error : error.message)
-    );
+
+    // Mejor manejo de errores para que el usuario sepa lo que ocurrió
+    const errorMessage = error.response?.data?.error || error.message;
+    alert(`Error al iniciar sesión: ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 };
 
