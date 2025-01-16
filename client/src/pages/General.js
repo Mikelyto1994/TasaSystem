@@ -257,24 +257,31 @@ const General = () => {
   };
 
   const deleteImageFromCloudinary = async (imageUrl, itemId) => {
+    if (!imageUrl || !itemId) {
+      console.error("❌ Error: imageUrl o itemId no proporcionados.", {
+        imageUrl,
+        itemId,
+      });
+      toast.error("Error: No se puede eliminar la imagen.");
+      return;
+    }
+
     const publicId = extractPublicIdFromImageUrl(imageUrl);
 
     try {
       const response = await axiosInstance.delete("/api/delete-image", {
-        data: { publicId, itemId }, // Enviamos tanto el publicId como el itemId
+        data: { publicId, itemId }, // Enviar ambos valores correctamente
       });
 
       if (response.status === 200) {
-        // Puedes hacer algo después de que la imagen se haya eliminado correctamente
-        console.log(
-          "Imagen eliminada correctamente y base de datos actualizada"
-        );
+        console.log("✅ Imagen eliminada correctamente.");
+        toast.success("Imagen eliminada correctamente.");
       } else {
         throw new Error("No se pudo eliminar la imagen de Cloudinary.");
       }
     } catch (err) {
-      console.error(err);
-      throw new Error("No se pudo eliminar la imagen de Cloudinary.");
+      console.error("❌ Error al eliminar imagen:", err);
+      toast.error("Error al eliminar la imagen.");
     }
   };
 
@@ -297,7 +304,7 @@ const General = () => {
   const handleImageUpload = async (e) => {
     e.preventDefault();
 
-    // Si el usuario no es el creador, no puede actualizar o eliminar la imagen
+    // Verificar que el usuario es el propietario
     if (!isOwner) {
       Swal.fire({
         title: "Acción no permitida",
@@ -308,8 +315,20 @@ const General = () => {
       return;
     }
 
+    // Verificar que haya una imagen seleccionada
     if (!image) {
       toast.error("Por favor selecciona una imagen.");
+      return;
+    }
+
+    console.log("🔍 selectedMovement:", selectedMovement);
+    console.log("🔍 selectedMovement.id:", selectedMovement?.id);
+    console.log("🔍 selectedMovement.imageUrl:", selectedMovement?.imageUrl);
+
+    if (!selectedMovement?.id) {
+      toast.error(
+        "Error: No se puede actualizar la imagen, falta el ID del movimiento."
+      );
       return;
     }
 
@@ -317,9 +336,12 @@ const General = () => {
     formData.append("image", image);
 
     try {
-      // Si ya existe una imagen, la eliminamos antes de subir la nueva
+      // Si hay una imagen previa, la eliminamos antes de subir la nueva
       if (selectedMovement?.imageUrl) {
-        // Asegúrate de pasar el itemId al eliminar la imagen
+        console.log(
+          "🔴 Eliminando imagen anterior:",
+          selectedMovement.imageUrl
+        );
         await deleteImageFromCloudinary(
           selectedMovement.imageUrl,
           selectedMovement.id
@@ -327,15 +349,44 @@ const General = () => {
       }
 
       // Ahora subimos la nueva imagen
+      console.log("🔵 Subiendo nueva imagen...");
       await updateMovementImage(selectedMovement.id, formData);
 
-      toast.success("Imagen cargada correctamente.");
-      fetchMovements();
+      toast.success("Imagen actualizada correctamente.");
+      fetchMovements(); // Refrescar la lista de movimientos
       setImageModalOpen(false);
       await refreshReport();
     } catch (err) {
-      toast.error("Error al cargar la imagen.");
-      console.error("Error al cargar la imagen:", err);
+      toast.error("Error al actualizar la imagen.");
+      console.error("❌ Error al actualizar la imagen:", err);
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    // Verificar que el usuario es el propietario
+    if (!isOwner) {
+      Swal.fire({
+        title: "Acción no permitida",
+        text: "No puedes eliminar la imagen, no eres el usuario que creó este movimiento.",
+        icon: "warning",
+        confirmButtonText: "Aceptar",
+      });
+      return;
+    }
+
+    try {
+      // Eliminar imagen de Cloudinary
+      console.log("🔴 Eliminando imagen de Cloudinary:", imageUrl);
+      await deleteImageFromCloudinary(imageUrl, selectedMovement.id);
+      setImageModalOpen(false);
+      fetchMovements(); // Refrescar la lista de movimientos
+
+      toast.success("Imagen eliminada correctamente.");
+
+      await refreshReport();
+    } catch (err) {
+      toast.error("Error al eliminar la imagen.");
+      console.error("❌ Error al eliminar la imagen:", err);
     }
   };
 
@@ -644,47 +695,23 @@ const General = () => {
                         className="w-full h-48 object-cover rounded-md"
                       />
                     </a>
-
-                    {/* Botón para eliminar imagen */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await deleteImageFromCloudinary(
-                            selectedMovement.imageUrl
-                          );
-
-                          // Actualizar el estado local para reflejar que no tiene imagen
-                          setSelectedMovement((prev) => ({
-                            ...prev,
-                            imageUrl: null,
-                          }));
-
-                          toast.success("Imagen eliminada correctamente.");
-
-                          // Llamada al backend para actualizar la base de datos (puedes hacer esto aquí si no se realiza automáticamente)
-                          await axiosInstance.put("/api/update-movement", {
-                            id: selectedMovement.id,
-                            imageUrl: null,
-                          });
-                        } catch (error) {
-                          toast.error("Error al eliminar la imagen.");
-                          console.error("Error eliminando imagen:", error);
-                        }
-                      }}
-                      className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
-                    >
-                      Eliminar imagen
-                    </button>
-
                     <p className="mt-2">¿Quieres cambiarla?</p>
                     <input
                       type="file"
                       onChange={(e) => setImage(e.target.files[0])}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       accept=".png, .jpeg, .jpg"
-                      disabled={!isOwner}
+                      disabled={!isOwner} // Deshabilitar si el usuario no es el propietario
                     />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleImageDelete(selectedMovement.imageUrl)
+                      }
+                      className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md"
+                    >
+                      Eliminar Imagen
+                    </button>
                   </div>
                 ) : (
                   <div>
@@ -693,12 +720,11 @@ const General = () => {
                       onChange={(e) => setImage(e.target.files[0])}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       accept=".png, .jpeg, .jpg"
-                      disabled={!isOwner}
+                      disabled={!isOwner} // Deshabilitar si el usuario no es el propietario
                     />
                   </div>
                 )}
               </div>
-
               <div className="flex justify-between">
                 <button
                   type="button"

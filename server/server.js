@@ -90,7 +90,58 @@ app.get(
   reportController.getMovementsByArea
 );
 
-// Ruta para eliminar un movimiento
+// Ruta para eliminar imagen de Cloudinary
+app.delete("/api/delete-image", authenticateJWT, async (req, res) => {
+  const { publicId, itemId } = req.body;
+
+  if (!publicId || !itemId) {
+    return res
+      .status(400)
+      .json({ message: "publicId y itemId son requeridos" });
+  }
+
+  try {
+    console.log("🔴 Eliminando imagen con publicId:", publicId);
+
+    // Llamada a Cloudinary para eliminar la imagen
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+    });
+
+    console.log("✅ Respuesta de Cloudinary:", result);
+
+    if (result.result === "ok") {
+      // Si la imagen se eliminó correctamente, actualizar la base de datos
+      await prisma.movimiento.update({
+        where: { id: Number(itemId) },
+        data: { imageUrl: null }, // Limpiar la referencia de la imagen en la base de datos
+      });
+
+      // Verificar si la imagen ya fue eliminada de Cloudinary
+      try {
+        await cloudinary.api.resource(publicId);
+        console.log("✅ La imagen sigue existiendo en Cloudinary");
+        return res.status(500).json({
+          message: "La imagen no se eliminó correctamente en Cloudinary.",
+        });
+      } catch (error) {
+        console.log("✅ Imagen eliminada correctamente de Cloudinary.");
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Imagen eliminada correctamente." });
+    } else {
+      return res
+        .status(500)
+        .json({ message: "Error al eliminar la imagen en Cloudinary." });
+    }
+  } catch (error) {
+    console.error("❌ Error al eliminar la imagen:", error);
+    return res.status(500).json({ message: "Error al eliminar la imagen." });
+  }
+});
+// Asegúrate de tener esta ruta en tu servidor backend (por ejemplo, en server.js o routes.js)
 app.delete("/movimiento/:id", authenticateJWT, async (req, res) => {
   const { id } = req.params; // Extrae el ID del movimiento de los parámetros de la URL
 
@@ -108,41 +159,6 @@ app.delete("/movimiento/:id", authenticateJWT, async (req, res) => {
   } catch (error) {
     console.error("Error al eliminar el movimiento:", error);
     res.status(500).json({ message: "Error al eliminar el movimiento" });
-  }
-});
-
-// Ruta para eliminar imagen de Cloudinary
-app.delete("/api/delete-image", authenticateJWT, async (req, res) => {
-  const { publicId, itemId } = req.body; // Recibes el publicId de la imagen y el itemId que necesitas actualizar en la base de datos
-
-  try {
-    // Llamada a Cloudinary para eliminar la imagen
-    const result = await cloudinary.uploader.destroy(publicId);
-
-    if (result.result === "ok") {
-      // Aquí agregamos la actualización de la base de datos
-      const updateImageUrl = await prisma.tuModelo.update({
-        where: {
-          id: itemId, // El ID del item al que pertenece la imagen
-        },
-        data: {
-          imageUrl: null, // O "" si prefieres usar una cadena vacía
-        },
-      });
-
-      return res
-        .status(200)
-        .json({
-          message: "Imagen eliminada correctamente y base de datos actualizada",
-        });
-    } else {
-      return res
-        .status(500)
-        .json({ message: "Error al eliminar la imagen en Cloudinary" });
-    }
-  } catch (error) {
-    console.error("Error al eliminar la imagen:", error);
-    res.status(500).json({ message: "Error al eliminar la imagen" });
   }
 });
 
