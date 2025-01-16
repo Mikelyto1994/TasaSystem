@@ -1,6 +1,13 @@
 {
-    "rules": {
-      "no-unused-vars": ["warn"]
+  "env": {
+    "production": {
+      "no-unused-vars": "warn"
+    },
+    "development": {
+      "no-unused-vars": "warn"
     }
+  },
+  "rules": {
+    "no-unused-vars": ["warn"] // Advertencia en lugar de error
   }
-  
+}
