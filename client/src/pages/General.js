@@ -256,18 +256,24 @@ const General = () => {
     }
   };
 
-  const deleteImageFromCloudinary = async (imageUrl) => {
+  const deleteImageFromCloudinary = async (imageUrl, itemId) => {
     const publicId = extractPublicIdFromImageUrl(imageUrl);
 
     try {
       const response = await axiosInstance.delete("/api/delete-image", {
-        data: { publicId },
+        data: { publicId, itemId }, // Enviamos tanto el publicId como el itemId
       });
 
-      if (response.status !== 200) {
+      if (response.status === 200) {
+        // Puedes hacer algo después de que la imagen se haya eliminado correctamente
+        console.log(
+          "Imagen eliminada correctamente y base de datos actualizada"
+        );
+      } else {
         throw new Error("No se pudo eliminar la imagen de Cloudinary.");
       }
     } catch (err) {
+      console.error(err);
       throw new Error("No se pudo eliminar la imagen de Cloudinary.");
     }
   };
@@ -313,7 +319,11 @@ const General = () => {
     try {
       // Si ya existe una imagen, la eliminamos antes de subir la nueva
       if (selectedMovement?.imageUrl) {
-        await deleteImageFromCloudinary(selectedMovement.imageUrl);
+        // Asegúrate de pasar el itemId al eliminar la imagen
+        await deleteImageFromCloudinary(
+          selectedMovement.imageUrl,
+          selectedMovement.id
+        );
       }
 
       // Ahora subimos la nueva imagen
@@ -643,13 +653,20 @@ const General = () => {
                           await deleteImageFromCloudinary(
                             selectedMovement.imageUrl
                           );
-                          toast.success("Imagen eliminada correctamente.");
 
-                          // Actualizar el estado del movimiento para reflejar que no tiene imagen
+                          // Actualizar el estado local para reflejar que no tiene imagen
                           setSelectedMovement((prev) => ({
                             ...prev,
                             imageUrl: null,
                           }));
+
+                          toast.success("Imagen eliminada correctamente.");
+
+                          // Llamada al backend para actualizar la base de datos (puedes hacer esto aquí si no se realiza automáticamente)
+                          await axiosInstance.put("/api/update-movement", {
+                            id: selectedMovement.id,
+                            imageUrl: null,
+                          });
                         } catch (error) {
                           toast.error("Error al eliminar la imagen.");
                           console.error("Error eliminando imagen:", error);
