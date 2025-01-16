@@ -81,9 +81,9 @@ const General = () => {
       }
 
       if (filter.categoria && filter.categoria !== "") {
-        // Filtrar solo si se selecciona una categoría
+        // Convertimos ambos valores a cadenas antes de comparar
         filtered = filtered.filter(
-          (movement) => movement.categoria.id === filter.categoria
+          (movement) => movement.categoria.id.toString() === filter.categoria
         );
       }
 
@@ -634,13 +634,39 @@ const General = () => {
                         className="w-full h-48 object-cover rounded-md"
                       />
                     </a>
+
+                    {/* Botón para eliminar imagen */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await deleteImageFromCloudinary(
+                            selectedMovement.imageUrl
+                          );
+                          toast.success("Imagen eliminada correctamente.");
+
+                          // Actualizar el estado del movimiento para reflejar que no tiene imagen
+                          setSelectedMovement((prev) => ({
+                            ...prev,
+                            imageUrl: null,
+                          }));
+                        } catch (error) {
+                          toast.error("Error al eliminar la imagen.");
+                          console.error("Error eliminando imagen:", error);
+                        }
+                      }}
+                      className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+                    >
+                      Eliminar imagen
+                    </button>
+
                     <p className="mt-2">¿Quieres cambiarla?</p>
                     <input
                       type="file"
                       onChange={(e) => setImage(e.target.files[0])}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       accept=".png, .jpeg, .jpg"
-                      disabled={!isOwner} // Deshabilitar si el usuario no es el propietario
+                      disabled={!isOwner}
                     />
                   </div>
                 ) : (
@@ -650,11 +676,12 @@ const General = () => {
                       onChange={(e) => setImage(e.target.files[0])}
                       className="w-full p-2 border border-gray-300 rounded-md"
                       accept=".png, .jpeg, .jpg"
-                      disabled={!isOwner} // Deshabilitar si el usuario no es el propietario
+                      disabled={!isOwner}
                     />
                   </div>
                 )}
               </div>
+
               <div className="flex justify-between">
                 <button
                   type="button"

@@ -39,7 +39,7 @@ const Reportes = () => {
 
         // Establecer "Todas" como valor predeterminado si está presente
         const todasCategoria = response.data.find(
-          (c) => c.name === "Sin categoria"
+          (c) => c.name === "Sin este filtro"
         );
         if (todasCategoria) {
           setCategoriaId(todasCategoria.id); // Establecer "Todas" como predeterminada
