@@ -33,7 +33,7 @@ const Reportes = () => {
     const fetchCategorias = async () => {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/categorias`
+          `${process.env.REACT_APP_API_URL}api/categorias`
         );
         setCategorias(response.data);
 
