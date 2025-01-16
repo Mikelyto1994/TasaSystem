@@ -503,109 +503,112 @@ const General = () => {
 
       {/* Tabla */}
       <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full border-collapse bg-white border border-gray-300 rounded-md">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Fecha
-              </th>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Tipo Movimiento
-              </th>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Categoría
-              </th>{" "}
-              {/* Nueva columna */}
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Descripción
-              </th>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Monto
-              </th>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Responsable
-              </th>
-              <th className="border border-gray-300 px-4 py-2 text-left">
-                Acciones:
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMovements.length === 0 ? (
+        <div className="inline-block min-w-full overflow-x-auto">
+          <table className="min-w-full border-collapse bg-white border border-gray-300 rounded-md">
+            <thead className="bg-gray-100">
               <tr>
-                <td
-                  colSpan="7"
-                  className="text-center p-4 text-gray-500 italic"
-                >
-                  No se encontraron movimientos.
-                </td>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Fecha
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Tipo Movimiento
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Categoría
+                </th>{" "}
+                {/* Nueva columna */}
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Descripción
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Monto
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Responsable
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Acciones:
+                </th>
               </tr>
-            ) : (
-              filteredMovements
-                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-                .map((movement) => (
-                  <tr key={movement.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2">
-                      {new Date(
-                        new Date(movement.fecha).setDate(
-                          new Date(movement.fecha).getDate() + 1
-                        )
-                      ).toLocaleDateString()}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {movement.tipoMovimiento}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {movement.categoria.name}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {movement.descripcion}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {movement.monto}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {responsibleNames[movement.userId] || "Cargando..."}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <select
-                        className="p-2 border rounded-md"
-                        value=""
-                        onChange={(e) => {
-                          const action = e.target.value;
-                          e.target.value = ""; // Restablece el valor del select
+            </thead>
+            <tbody>
+              {filteredMovements.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="text-center p-4 text-gray-500 italic"
+                  >
+                    No se encontraron movimientos.
+                  </td>
+                </tr>
+              ) : (
+                filteredMovements
+                  .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+                  .map((movement) => (
+                    <tr key={movement.id} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">
+                        {new Date(
+                          new Date(movement.fecha).setDate(
+                            new Date(movement.fecha).getDate() + 1
+                          )
+                        ).toLocaleDateString()}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {movement.tipoMovimiento}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {movement.categoria.name}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {movement.descripcion}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {movement.monto}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {responsibleNames[movement.userId] || "Cargando..."}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <select
+                          className="p-2 border rounded-md"
+                          value=""
+                          onChange={(e) => {
+                            const action = e.target.value;
+                            e.target.value = ""; // Restablece el valor del select
 
-                          if (action === "edit") {
-                            // Llamamos a handleOpenEditModal cuando se selecciona "editar"
-                            handleOpenEditModal(movement);
-                          } else if (action === "image") {
-                            handleOpenImageModal(movement);
-                          } else if (action === "delete") {
-                            handleDelete(
-                              movement.id,
-                              movement.imageUrl,
-                              movement.userId
-                            );
-                          }
-                        }}
-                      >
-                        <option value="">Escoger acción</option>
-                        <option value="edit">Editar</option>{" "}
-                        {/* Nueva opción de editar */}
-                        {movement.imageUrl ? (
-                          <option value="image">Ver Imagen</option>
-                        ) : (
-                          <option value="image">Añadir Imagen</option>
-                        )}
-                        <option value="delete">Eliminar</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))
-            )}
-          </tbody>
-        </table>
+                            if (action === "edit") {
+                              // Llamamos a handleOpenEditModal cuando se selecciona "editar"
+                              handleOpenEditModal(movement);
+                            } else if (action === "image") {
+                              handleOpenImageModal(movement);
+                            } else if (action === "delete") {
+                              handleDelete(
+                                movement.id,
+                                movement.imageUrl,
+                                movement.userId
+                              );
+                            }
+                          }}
+                        >
+                          <option value="">Escoger acción</option>
+                          <option value="edit">Editar</option>{" "}
+                          {/* Nueva opción de editar */}
+                          {movement.imageUrl ? (
+                            <option value="image">Ver Imagen</option>
+                          ) : (
+                            <option value="image">Añadir Imagen</option>
+                          )}
+                          <option value="delete">Eliminar</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
       {/* Modal de imagen */}
       {imageModalOpen && (
         <div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-50 z-50">

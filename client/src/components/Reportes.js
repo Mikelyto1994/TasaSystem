@@ -382,11 +382,9 @@ const Reportes = () => {
           </div>
         </div>
 
-        <div className="flex gap-4">
-          {" "}
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
           {/* Contenedor flex para alinearlos al lado */}
           <div className="flex items-center">
-            {" "}
             {/* Para mantener la etiqueta y el select alineados */}
             <label
               htmlFor="filtroMovimiento"
@@ -407,7 +405,6 @@ const Reportes = () => {
             </select>
           </div>
           <div className="flex items-center">
-            {" "}
             {/* Contenedor del segundo select */}
             <label
               htmlFor="categoria"
@@ -419,7 +416,7 @@ const Reportes = () => {
               id="categoria"
               value={categoriaId}
               onChange={(e) => setCategoriaId(e.target.value)}
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full sm:w-auto mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="">Sin este filtro</option>{" "}
               {/* Esta es la nueva opción */}
