@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const { prisma } = require("../server"); // Asegúrate de exportar 'prisma' desde el server.js
+const prisma = require("./prisma"); // Importa desde el archivo prisma.j
 
 // Función de registro de usuario
 const register = async (req, res) => {
@@ -25,10 +25,8 @@ const register = async (req, res) => {
     });
 
     const userTime = Date.now() - userStart;
-    console.log(`Registro del usuario completado en ${userTime}ms`);
 
     const totalTime = Date.now() - start;
-    console.log(`Proceso de registro completado en ${totalTime}ms`);
 
     res.status(201).json({ message: "Usuario creado", user: newUser });
   } catch (error) {
@@ -45,44 +43,33 @@ const register = async (req, res) => {
   }
 };
 
-// Función de login de usuario
 const login = async (req, res) => {
   const start = Date.now(); // Marca el inicio de la operación de login
   try {
     const { username, password } = req.body;
 
-    // Log de inicio de la consulta
-    console.log("Iniciando búsqueda de usuario...");
     const userStart = Date.now();
-
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
         id: true,
         username: true,
-        password: true, // Asegúrate de que 'password' esté en el 'select'
+        password: true, // Obtén la contraseña en texto plano
         periodoInicio: true,
         periodoFin: true,
       },
     });
 
     const userTime = Date.now() - userStart;
-    console.log(`Consulta de usuario completada en ${userTime}ms`);
 
     if (!user) {
       return res.status(400).json({ error: "Usuario no encontrado" });
     }
 
-    // Log de comparación de contraseña
-    console.log("Iniciando comparación de contraseña...");
-    const bcryptStart = Date.now();
+    // Verifica si el user tiene los campos correctos antes de la validación de la contraseña
 
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    const bcryptTime = Date.now() - bcryptStart;
-    console.log(`Comparación de contraseña completada en ${bcryptTime}ms`);
-
-    if (!isMatch) {
+    // Comparación de contraseñas en texto plano (sin bcrypt)
+    if (password !== user.password) {
       return res.status(400).json({ error: "Contraseña incorrecta" });
     }
 
@@ -95,18 +82,15 @@ const login = async (req, res) => {
     );
 
     const tokenTime = Date.now() - tokenStart;
-    console.log(`Generación del JWT completada en ${tokenTime}ms`);
 
     const totalTime = Date.now() - start;
-    console.log(`Proceso de login completado en ${totalTime}ms`);
 
-    // Enviar el token junto con las fechas del periodo
     return res.status(200).json({
       token,
+      userId: user.id, // Aquí agregamos el userId en la respuesta
       periodoInicio: user.periodoInicio,
       periodoFin: user.periodoFin,
       loginTime: totalTime, // Tiempo total de ejecución del login
-      bcryptTime, // Tiempo de la verificación de la contraseña
       userTime, // Tiempo de la consulta del usuario
     });
   } catch (error) {

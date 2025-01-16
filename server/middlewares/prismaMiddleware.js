@@ -1,4 +1,4 @@
-const { Prisma } = require("@prisma/client"); // Cambiar import por require
+// No es necesario importar Prisma aquí
 
 // Definir el offset de Lima (UTC-5)
 const limaOffset = -5;

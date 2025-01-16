@@ -24,6 +24,7 @@ const useAuth = (setAuthenticated) => {
           setAuthenticated(false);
           localStorage.removeItem("periodoInicio");
           localStorage.removeItem("periodoFin");
+          localStorage.removeItem("userId");
           localStorage.removeItem("token");
           localStorage.removeItem("userName");
           navigate("/login");

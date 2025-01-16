@@ -13,6 +13,7 @@ router.post("/login", authController.login);
 // Rutas de movimientos (ingreso/egreso)
 router.post("/movimiento", authenticateJWT, reportController.createMovement);
 router.get("/movimientos", authenticateJWT, reportController.getMovements);
+router.put("/movimiento/:id", authenticateJWT, reportController.updateMovement);
 
 // Nueva ruta para actualizar la imagen de un movimiento
 router.put(

@@ -1,7 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
+const prisma = require("./controllers/prisma"); // Importa la instancia centralizada de Prisma
 
 const updatePasswords = async () => {
   try {
@@ -25,11 +23,7 @@ const updatePasswords = async () => {
         where: { id: user.id },
         data: { password: hashedPassword },
       });
-
-      console.log(`Contraseña actualizada para el usuario: ${user.username}`);
     }
-
-    console.log("Actualización de contraseñas completada");
   } catch (error) {
     console.error("Error al actualizar las contraseñas:", error);
   } finally {

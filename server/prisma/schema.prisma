@@ -24,13 +24,16 @@ model User {
   periodoFin    DateTime  // Fecha de fin del periodo permitido
 }
 
-
-
-
 model Area {
   id          Int      @id @default(autoincrement())
   name        String   @unique
   users       User[]
+}
+
+model Categoria {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique  // Nombre de la categoría
+  movimientos Movimiento[] // Relación con los movimientos
 }
 
 model Movimiento {
@@ -41,14 +44,12 @@ model Movimiento {
   monto           Float        // Monto del movimiento
   imageUrl        String?      // URL de la imagen (si se sube una)
   userId          Int
+  categoriaId     Int          // Nueva columna que referencia la categoría
   user            User         @relation(fields: [userId], references: [id])
-  
+  categoria       Categoria    @relation(fields: [categoriaId], references: [id]) // Relación con Categoria
   images          Image[]      @relation("MovementImages") // Relación con Image
-  
-  // Nueva columna FechaCreacion
   FechaCreacion   DateTime     @default(now())  // Fecha y hora de la creación del movimiento
 }
-
 
 model Image {
   id          Int      @id @default(autoincrement())
@@ -58,8 +59,6 @@ model Image {
   movements   Movimiento[]  @relation("MovementImages")
 }
 
-
-// Definir el enum para los tipos de movimiento
 enum TipoMovimiento {
   ingreso
   egreso

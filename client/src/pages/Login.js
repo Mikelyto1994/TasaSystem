@@ -12,6 +12,7 @@ const Login = ({ setAuthenticated, setUserName }) => {
   // Verificación de si el usuario ya está autenticado al cargar la página
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     const storedUserName = localStorage.getItem("userName");
 
     if (token && storedUserName) {
@@ -30,15 +31,16 @@ const Login = ({ setAuthenticated, setUserName }) => {
     setLoading(true);
     try {
       const response = await loginUser(username, password);
-      const { token } = response;
+      const { token, userId } = response; // Desestructuración para obtener el userId
 
       if (!token) {
         throw new Error("No se recibió un token válido.");
       }
 
-      // Guardar el token y el nombre de usuario en localStorage
+      // Guardar el token, el nombre de usuario y el userId en localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("userName", username);
+      localStorage.setItem("userId", userId); // Guardamos el userId
 
       // Actualizar el estado de autenticación
       setAuthenticated(true);

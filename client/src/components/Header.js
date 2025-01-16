@@ -18,6 +18,7 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
   const handleLogout = () => {
     // Eliminar el token y el nombre de usuario del localStorage
     localStorage.removeItem("periodoInicio");
+    localStorage.removeItem("userId");
     localStorage.removeItem("periodoFin");
     localStorage.removeItem("token");
     localStorage.removeItem("userName");

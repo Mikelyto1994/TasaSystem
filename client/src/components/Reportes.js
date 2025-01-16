@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import axiosInstance from "../axios"; // Asegúrate de importar la instancia correctamente
+import React, { useState, useEffect } from "react";
+import axiosInstance from "../axios";
 import { toast } from "react-toastify";
-import { getMovements, updateMovementImage } from "../services/api"; // Asegúrate que esta función haga la solicitud al backend
+import { getMovements, updateMovementImage } from "../services/api";
 import { ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 const Reportes = () => {
+  const [categoriaId, setCategoriaId] = useState(""); // Para manejar la categoría seleccionada
+  const [categorias, setCategorias] = useState([]);
   const [mes, setMes] = useState("");
   const [año, setAño] = useState("");
   const [ingresos, setIngresos] = useState(0);
@@ -15,56 +18,136 @@ const Reportes = () => {
   const [tipoMovimiento, setTipoMovimiento] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [detalleMovimiento, setDetalleMovimiento] = useState([]);
-  const [imageModalOpen, setImageModalOpen] = useState(false); // Para manejar el estado del modal de imagen
-  const [selectedMovimiento, setSelectedMovimiento] = useState(null); // Para almacenar el movimiento seleccionado
-  const [image, setImage] = useState(null); // Para manejar la imagen cargada
-  const [modalKey, setModalKey] = useState(0); // Forzar re-render del modal
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedMovimiento, setSelectedMovimiento] = useState(null);
+  const [image, setImage] = useState(null);
+  const [modalKey, setModalKey] = useState(0);
+  const [filtroMovimiento, setFiltroMovimiento] = useState("mis"); // Filtro que captura "mis" o "grupo"
+  // Asegúrate de que movementUserId esté siendo asignado correctamente
+  const [movementUserId, setMovementUserId] = useState(null);
 
+  const userIdLocal = localStorage.getItem("userId");
+
+  // Verificar si el usuario puede añadir imagen o eliminar movimiento
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/categorias`
+        );
+        setCategorias(response.data);
+
+        // Establecer "Todas" como valor predeterminado si está presente
+        const todasCategoria = response.data.find(
+          (c) => c.name === "Sin categoria"
+        );
+        if (todasCategoria) {
+          setCategoriaId(todasCategoria.id); // Establecer "Todas" como predeterminada
+        }
+      } catch (error) {
+        console.error("Error al obtener las categorías:", error);
+      }
+    };
+
+    fetchCategorias();
+  }, []); // Solo se ejecuta una vez al cargar el componente
+
+  // Abrir modal para cargar imagen solo si el usuario es el creador
+  const openImageModal = (movement) => {
+    if (parseInt(userIdLocal) !== parseInt(movement.userId)) {
+      // Si no eres el creador, mostramos el SweetAlert
+      Swal.fire({
+        title: "Acción no permitida",
+        text: "No puedes añadir una imagen, no eres el usuario que creó este movimiento.",
+        icon: "warning",
+        confirmButtonText: "Aceptar",
+      });
+      return; // No abrimos el modal
+    }
+    setSelectedMovimiento(movement);
+    setImageModalOpen(true);
+  };
+
+  // Función para cargar el reporte con el filtro "Por" (Mis movimientos o Mi grupo)
   const refreshReport = async () => {
     if (!mes || !año) {
       toast.error("Por favor, selecciona mes y año.");
       return;
     }
 
-    // Crear la fecha de inicio en UTC para el mes seleccionado (primer día del mes)
-    const startDate = new Date(Date.UTC(año, mes - 1, 1)); // Primer día del mes
-    startDate.setHours(0, 0, 0, 0); // Aseguramos que la hora sea 00:00:00 en UTC
-
-    // Crear la fecha de fin en UTC para el mes seleccionado
-    let endDate;
-    if (mes === 12) {
-      // Si es diciembre, la fecha final debe ser el 31 de diciembre
-      endDate = new Date(Date.UTC(año, mes - 1, 31)); // Último día de diciembre
-    } else {
-      // Para cualquier otro mes, usamos el último día natural del mes
-      endDate = new Date(Date.UTC(año, mes, 0)); // Último día del mes
-    }
-    endDate.setHours(23, 59, 59, 999); // Aseguramos que la hora sea 23:59:59 en UTC
-
-    // Convertimos las fechas a formato ISO para pasarlas al backend
-    const startDateString = startDate.toISOString();
-    const endDateString = endDate.toISOString();
+    // Crear las fechas de inicio y fin según el mes y el año
+    const startDate = new Date(Date.UTC(año, mes - 1, 1));
+    const endDate = new Date(Date.UTC(año, mes, 0));
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
 
     setLoading(true);
 
     try {
-      // Directly extract and process the data from the API call
-      const data = await getMovements({
-        startDate: startDateString,
-        endDate: endDateString,
+      let data;
+
+      // Incluye la categoría en los parámetros de la solicitud si se necesita
+      const params = {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        categoriaId: categoriaId || undefined, // Si la categoría está seleccionada, se pasa, si no, no se incluye
+      };
+
+      if (filtroMovimiento === "grupo") {
+        const response = await axiosInstance.get("/movimientos/area", {
+          params,
+        });
+        data = response.data;
+      } else {
+        data = await getMovements({ params, filtro: filtroMovimiento });
+      }
+
+      // Filtrar los movimientos por el rango de fechas (startDate - endDate)
+      let filteredData = data.filter((mov) => {
+        const movDate = new Date(mov.fecha);
+        return movDate >= startDate && movDate <= endDate;
       });
 
-      const ingresosTotal = data
+      // Si se ha seleccionado una categoría (y no es la opción "Sin filtro"), filtrar los movimientos por la categoría
+      if (categoriaId && categoriaId !== "") {
+        filteredData = filteredData.filter(
+          (mov) => mov.categoria.id === categoriaId
+        );
+      }
+
+      // Continuar con el procesamiento de los movimientos
+      const movimientosConResponsable = await Promise.all(
+        filteredData.map(async (mov) => {
+          try {
+            const response = await axiosInstance.get(`/user/${mov.userId}`);
+            const username = response.data.username;
+            return {
+              ...mov,
+              responsable: username || "No asignado",
+              movementUserId: mov.userId,
+            };
+          } catch (err) {
+            return {
+              ...mov,
+              responsable: "No asignado",
+              movementUserId: mov.userId,
+            };
+          }
+        })
+      );
+
+      setMovimientos(movimientosConResponsable);
+
+      // Calcular ingresos y egresos
+      const ingresosTotal = movimientosConResponsable
         .filter((mov) => mov.tipoMovimiento === "ingreso")
         .reduce((sum, mov) => sum + mov.monto, 0);
-
-      const egresosTotal = data
+      const egresosTotal = movimientosConResponsable
         .filter((mov) => mov.tipoMovimiento === "egreso")
         .reduce((sum, mov) => sum + mov.monto, 0);
 
       setIngresos(ingresosTotal);
       setEgresos(egresosTotal);
-      setMovimientos(data);
     } catch (err) {
       toast.error("Error al obtener los reportes.");
       console.error("Error al obtener los reportes:", err);
@@ -73,61 +156,13 @@ const Reportes = () => {
     }
   };
 
+  // Llamar a la función de refresco al hacer submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!mes || !año) {
-      toast.error("Por favor, selecciona mes y año.");
-      return;
-    }
-
-    // Crear la fecha de inicio en UTC para el mes seleccionado (primer día del mes)
-    const startDate = new Date(Date.UTC(año, mes - 1, 1)); // Primer día del mes
-    startDate.setHours(0, 0, 0, 0); // Aseguramos que la hora sea 00:00:00 en UTC
-
-    // Crear la fecha de fin en UTC para el mes seleccionado
-    let endDate;
-    if (mes === 12) {
-      // Si es diciembre, la fecha final debe ser el 31 de diciembre
-      endDate = new Date(Date.UTC(año, mes - 1, 31)); // Último día de diciembre
-    } else {
-      // Para cualquier otro mes, usamos el último día natural del mes
-      endDate = new Date(Date.UTC(año, mes, 0)); // Último día del mes
-    }
-    endDate.setHours(23, 59, 59, 999); // Aseguramos que la hora sea 23:59:59 en UTC
-
-    // Convertimos las fechas a formato ISO para pasarlas al backend
-    const startDateString = startDate.toISOString();
-    const endDateString = endDate.toISOString();
-
-    setLoading(true);
-
-    try {
-      const response = await getMovements({
-        startDate: startDateString,
-        endDate: endDateString,
-      });
-
-      const ingresosTotal = response
-        .filter((mov) => mov.tipoMovimiento === "ingreso")
-        .reduce((sum, mov) => sum + mov.monto, 0);
-
-      const egresosTotal = response
-        .filter((mov) => mov.tipoMovimiento === "egreso")
-        .reduce((sum, mov) => sum + mov.monto, 0);
-
-      setIngresos(ingresosTotal);
-      setEgresos(egresosTotal);
-      setMovimientos(response);
-    } catch (err) {
-      toast.error("Error al obtener los reportes.");
-      console.error("Error al obtener los reportes:", err);
-    } finally {
-      setLoading(false);
-    }
+    await refreshReport();
   };
 
-  // Función para abrir el modal y mostrar los detalles
+  // Abrir el modal de detalles del movimiento
   const openModal = (tipo) => {
     setTipoMovimiento(tipo);
     const filteredMovements = movimientos.filter(
@@ -135,29 +170,21 @@ const Reportes = () => {
     );
     setDetalleMovimiento(filteredMovements);
     setModalOpen(true);
-    setModalKey((prevKey) => prevKey + 1); // Forzar un cambio en la clave del modal
+    setModalKey((prevKey) => prevKey + 1);
   };
 
-  // Función para cerrar el modal de detalles
+  // Cerrar el modal de detalles
   const closeModal = () => {
     setModalOpen(false);
     setDetalleMovimiento([]);
-    setModalKey((prevKey) => prevKey + 1); // Forzar un cambio en la clave para forzar el re-render
+    setModalKey((prevKey) => prevKey + 1);
   };
 
-  // Función para abrir el modal de carga de imagen
-  const openImageModal = (movimiento) => {
-    setSelectedMovimiento(movimiento); // Establecemos el movimiento seleccionado
-    setImageModalOpen(true); // Abrimos el modal
-  };
-
-  // Función para cerrar el modal de carga de imagen
   const closeImageModal = () => {
     setImageModalOpen(false);
-    setImage(null); // Limpiamos la imagen seleccionada
+    setImage(null);
   };
 
-  // Función para manejar la carga de la imagen
   const handleImageUpload = async (e) => {
     e.preventDefault();
 
@@ -170,15 +197,9 @@ const Reportes = () => {
     formData.append("image", image);
 
     try {
-      // Llamada a la función que actualiza la imagen, sin guardar la respuesta
       await updateMovementImage(selectedMovimiento.id, formData);
-
       toast.success("Imagen cargada correctamente.");
-
-      // Llamamos a refreshReport para obtener los movimientos actualizados
       await refreshReport();
-
-      // Cerrar los modales después de la carga exitosa
       closeImageModal();
       closeModal();
     } catch (err) {
@@ -187,23 +208,42 @@ const Reportes = () => {
     }
   };
 
+  // Formato de fecha
   const formatFecha = (fecha) => {
     const date = new Date(fecha);
-
-    // Verificar si la fecha es válida
     if (isNaN(date.getTime())) {
       console.error("Fecha inválida:", fecha);
       return "";
     }
 
-    // Añadir un día a la fecha
     date.setDate(date.getDate() + 1);
-
-    // Ahora formateas la fecha a un formato legible (por ejemplo: dd/mm/yyyy)
-    return date.toLocaleDateString("es-PE"); // Formato de fecha en español para Perú
+    return date.toLocaleDateString("es-PE");
   };
 
-  const handleDelete = async (movementId, imageUrl) => {
+  const obtenerReporte = async () => {
+    try {
+      const response = await fetch("/api/movimientos"); // Reemplaza con tu API real
+      const data = await response.json();
+      setMovimientos(data); // Actualiza el estado con los movimientos más recientes
+    } catch (error) {
+      console.error("Error al obtener el reporte:", error);
+    }
+  };
+
+  // Eliminar un movimiento
+  const handleDelete = async (movementId, imageUrl, movementUserId) => {
+    if (parseInt(userIdLocal) !== parseInt(movementUserId)) {
+      // Si no es el creador, mostramos el SweetAlert
+      Swal.fire({
+        title: "Acción no permitida",
+        text: "No puedes ejecutar esta acción, no eres el usuario que creó este movimiento.",
+        icon: "warning",
+        confirmButtonText: "Aceptar",
+      });
+      return; // No continuar con la eliminación
+    }
+
+    // Si el usuario es el creador, procedemos con la eliminación
     const result = await Swal.fire({
       title: "¿Estás seguro?",
       text: "Este movimiento será eliminado permanentemente.",
@@ -217,24 +257,24 @@ const Reportes = () => {
     if (!result.isConfirmed) return;
 
     try {
-      // Eliminar el movimiento de la base de datos
+      // Primero eliminamos el movimiento en la base de datos
       await deleteMovement(movementId);
 
-      // Si hay una imagen asociada, eliminamos la imagen de Cloudinary
+      // Si el movimiento tiene una imagen, eliminamos la imagen de Cloudinary
       if (imageUrl) {
-        await deleteImageFromCloudinary(imageUrl);
+        await deleteImageFromCloudinary(imageUrl); // Función para eliminar imagen de Cloudinary
       }
 
-      // Actualizamos el estado para eliminar el movimiento del frontend
+      // Eliminar el movimiento de la lista local de movimientos
       setMovimientos((prevMovimientos) =>
         prevMovimientos.filter((mov) => mov.id !== movementId)
       );
 
-      // Cerrar el modal después de la eliminación
-      closeModal(); // Cierra el modal de detalles
+      // Cerrar el modal de detalles después de eliminar el movimiento
+      closeModal();
 
-      // Actualizar los ingresos y egresos llamando a refreshReport
-      refreshReport(); // Esto actualizará los montos de ingresos y egresos
+      // Aquí llamamos la función que obtiene el reporte (esto actualizará la lista)
+      refreshReport(); // Simulando el "clic" en el botón Obtener reporte
 
       Swal.fire(
         "¡Eliminado!",
@@ -251,13 +291,12 @@ const Reportes = () => {
     }
   };
 
-  // Función para eliminar la imagen de Cloudinary (solo se llama si hay una imagen)
   const deleteImageFromCloudinary = async (imageUrl) => {
     const publicId = extractPublicIdFromImageUrl(imageUrl);
 
     try {
       const response = await axiosInstance.delete("/api/delete-image", {
-        data: { publicId }, // Usamos `data` para el cuerpo de la solicitud DELETE
+        data: { publicId },
       });
 
       if (response.status !== 200) {
@@ -268,15 +307,15 @@ const Reportes = () => {
     }
   };
 
-  // Función para extraer el publicId de la URL de Cloudinary
+  // Extraer el ID público de la URL de la imagen
   const extractPublicIdFromImageUrl = (imageUrl) => {
     const regex =
       /https:\/\/res.cloudinary.com\/[a-z0-9]+\/image\/upload\/v[0-9]+\/(.+)\.(jpg|png|jpeg)/;
     const match = imageUrl.match(regex);
-    return match ? match[1] : null; // Devuelve el publicId
+    return match ? match[1] : null;
   };
 
-  // Función para eliminar el movimiento de la base de datos
+  // Eliminar un movimiento
   const deleteMovement = async (movementId) => {
     try {
       const response = await axiosInstance.delete(`/movimiento/${movementId}`);
@@ -343,6 +382,56 @@ const Reportes = () => {
           </div>
         </div>
 
+        <div className="flex gap-4">
+          {" "}
+          {/* Contenedor flex para alinearlos al lado */}
+          <div className="flex items-center">
+            {" "}
+            {/* Para mantener la etiqueta y el select alineados */}
+            <label
+              htmlFor="filtroMovimiento"
+              className="text-lg font-medium mr-2"
+            >
+              Ver por:
+            </label>
+            <select
+              id="filtroMovimiento"
+              value={filtroMovimiento}
+              onChange={(e) => {
+                setFiltroMovimiento(e.target.value);
+              }}
+              className="mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="mis">Mis movimientos</option>
+              <option value="grupo">Mi grupo</option>
+            </select>
+          </div>
+          <div className="flex items-center">
+            {" "}
+            {/* Contenedor del segundo select */}
+            <label
+              htmlFor="categoria"
+              className="block text-lg font-medium text-gray-700 mr-7 ml-5"
+            >
+              Categoría
+            </label>
+            <select
+              id="categoria"
+              value={categoriaId}
+              onChange={(e) => setCategoriaId(e.target.value)}
+              className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">Sin este filtro</option>{" "}
+              {/* Esta es la nueva opción */}
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <button
           type="submit"
           className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200"
@@ -351,6 +440,7 @@ const Reportes = () => {
         </button>
       </form>
 
+      {/* Mostrar reporte de ingresos y egresos */}
       {loading ? (
         <div className="text-center mt-6">Cargando reportes...</div>
       ) : (
@@ -397,78 +487,126 @@ const Reportes = () => {
       {/* Modal para detalles de movimientos */}
       {modalOpen && detalleMovimiento.length > 0 && (
         <div
-          key={modalKey} // Forzar un cambio en la clave del modal
+          key={modalKey}
           className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50"
         >
           <div className="bg-white p-6 rounded-lg max-w-lg w-full">
-            <h3 className="text-2xl font-semibold text-gray-700">
-              Detalles de{" "}
-              {tipoMovimiento === "ingreso" ? "Ingresos" : "Egresos"}
-            </h3>
+            {/* Título con botón de cerrar */}
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-semibold text-gray-700">
+                Detalles de{" "}
+                {tipoMovimiento === "ingreso" ? "Ingresos" : "Egresos"}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                X
+              </button>
+            </div>
 
-            <ul className="mt-4 space-y-3">
-              {detalleMovimiento
-                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)) // Ordenar de más reciente a más antiguo
-                .map((mov, index) => (
-                  <li key={index} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg">{mov.descripcion}</p>
-                      <p className="text-sm text-gray-500">
-                        Fecha: {formatFecha(mov.fecha)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Monto: {mov.monto.toFixed(2)} Soles
-                      </p>
-                    </div>
+            {/* Contenedor con desplazamiento para las filas */}
+            <div className="overflow-y-auto max-h-[320px] mt-4">
+              <ul className="space-y-3">
+                {detalleMovimiento
+                  .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+                  .map((mov, index) => (
+                    <li
+                      key={index}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-lg">{mov.descripcion}</p>
+                        <p className="text-sm text-gray-500">
+                          Fecha: {formatFecha(mov.fecha)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Monto: {mov.monto.toFixed(2)} Soles
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Responsable: {mov.responsable || "No asignado"}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Categoría:{" "}
+                          {categorias.find(
+                            (categoria) => categoria.id === mov.categoriaId
+                          )?.name || "Sin categoría"}
+                        </p>
+                      </div>
 
-                    {/* Botón de Eliminar siempre visible, incluso si no hay imagen */}
-                    <div className="flex items-center space-x-4">
-                      {mov.imageUrl ? (
-                        <>
-                          {/* Si hay una imagen, muestra el botón "Ver Imagen" */}
-                          <a
-                            href={mov.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 border border-blue-500 px-3 py-1 rounded-md hover:bg-blue-500 hover:text-white transition-colors"
-                          >
-                            Ver Imagen
-                          </a>
-                          <button
-                            onClick={() => handleDelete(mov.id, mov.imageUrl)}
-                            className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                            Eliminar
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {/* Si no hay imagen, muestra el botón para cargar una nueva imagen */}
-                          <button
-                            onClick={() => openImageModal(mov)} // Aquí abrimos el modal para añadir imagen
-                            className="text-sm text-green-500 border border-green-500 px-3 py-1 rounded-md hover:bg-green-500 hover:text-white transition-colors"
-                          >
-                            Añadir Imagen
-                          </button>
-                          <button
-                            onClick={() => handleDelete(mov.id)} // Elimina el movimiento si no hay imagen
-                            className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                            Eliminar
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </li>
-                ))}
-            </ul>
+                      <div className="flex items-center space-x-4">
+                        {mov.imageUrl ? (
+                          <>
+                            <a
+                              href={mov.imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-500 border border-blue-500 px-3 py-1 rounded-md hover:bg-blue-500 hover:text-white transition-colors"
+                            >
+                              Ver Imagen
+                            </a>
+                            <button
+                              onClick={() => {
+                                if (mov.id) {
+                                  handleDelete(
+                                    mov.id,
+                                    mov.imageUrl,
+                                    mov.movementUserId
+                                  ); // Pasa movementUserId
+                                } else {
+                                  console.error(
+                                    "Movimiento no tiene un id válido"
+                                  );
+                                }
+                              }}
+                              className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => openImageModal(mov)}
+                              className="text-sm text-green-500 border border-green-500 px-3 py-1 rounded-md hover:bg-green-500 hover:text-white transition-colors"
+                            >
+                              Añadir Imagen
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (mov.id && mov.movementUserId) {
+                                  handleDelete(
+                                    mov.id,
+                                    mov.imageUrl,
+                                    mov.movementUserId
+                                  ); // Pasa también movementUserId
+                                } else {
+                                  console.error(
+                                    "Movimiento no tiene un id válido o movementUserId"
+                                  );
+                                }
+                              }}
+                              className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
 
-            <button
-              onClick={closeModal}
-              className="mt-4 py-2 px-4 bg-gray-300 text-gray-800 rounded-lg"
-            >
-              Cerrar
-            </button>
+            {/* Botón de cerrar */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={closeModal}
+                className="py-2 px-4 bg-gray-300 text-gray-800 rounded-lg"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -483,28 +621,31 @@ const Reportes = () => {
             <form onSubmit={handleImageUpload} className="space-y-4">
               <div>
                 <label className="block text-lg font-medium text-gray-700">
-                  Selecciona una Imagen
+                  Selecciona una imagen
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImage(e.target.files[0])}
-                  className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="mt-2 w-full p-2 border border-gray-300 rounded-lg"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full py-2 bg-orange-500 text-white rounded-lg"
-              >
-                Subir Imagen
-              </button>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={closeImageModal}
+                  className="py-2 px-4 bg-gray-300 text-gray-800 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="py-2 px-4 bg-blue-500 text-white rounded-lg"
+                >
+                  Subir Imagen
+                </button>
+              </div>
             </form>
-            <button
-              onClick={closeImageModal}
-              className="mt-4 py-2 px-4 bg-gray-300 text-gray-800 rounded-lg"
-            >
-              Cerrar
-            </button>
           </div>
         </div>
       )}

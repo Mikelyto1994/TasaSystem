@@ -12,7 +12,6 @@ export const loginUser = async (username, password) => {
     });
 
     // Verifica la respuesta completa
-    console.log("Respuesta del backend:", response.data);
 
     // Desestructurar la respuesta para obtener los tiempos
     const {
@@ -20,14 +19,12 @@ export const loginUser = async (username, password) => {
       periodoInicio,
       periodoFin,
       loginTime,
+      userId,
       bcryptTime,
       userTime,
     } = response.data;
 
     // Verifica si los tiempos vienen correctamente
-    console.log("Tiempo total de login:", loginTime);
-    console.log("Tiempo de comparación de contraseña:", bcryptTime);
-    console.log("Tiempo de consulta del usuario:", userTime);
 
     // Guardar el token y las fechas de periodo en localStorage
     localStorage.setItem("token", token);
@@ -39,6 +36,7 @@ export const loginUser = async (username, password) => {
       token,
       periodoInicio,
       periodoFin,
+      userId,
       loginTime,
       bcryptTime,
       userTime,
@@ -71,17 +69,19 @@ export const createMovement = async (movementData) => {
 };
 
 // Obtener los movimientos de un usuario
+// Obtener los movimientos con filtros
 export const getMovements = async (filters) => {
   try {
     const response = await axiosInstance.get("/movimientos", {
-      params: filters,
+      params: filters, // Pasamos los filtros, incluyendo el área
     });
-    return response.data; // Retorna la lista de movimientos
+    return response.data; // Retorna la lista de movimientos filtrados
   } catch (error) {
     console.error("Error al obtener los movimientos:", error);
     throw error;
   }
 };
+
 // Función para eliminar el movimiento de la base de datos
 export const deleteMovement = async (movementId) => {
   try {

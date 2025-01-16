@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { createMovement } from "../services/api"; // Asegúrate que esta función haga la solicitud al backend
+import React, { useState, useEffect } from "react";
+import { createMovement } from "../services/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const Movimientos = () => {
   const [tipoMovimiento, setTipoMovimiento] = useState("");
@@ -9,62 +10,87 @@ const Movimientos = () => {
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState("");
   const [image, setImage] = useState(null);
+  const [categorias, setCategorias] = useState([]);
+  const [categoriaId, setCategoriaId] = useState(""); // Estado para la categoría seleccionada
+  const [isSubmitting, setIsSubmitting] = useState(false); // Estado para deshabilitar el botón mientras se envía el formulario
 
   // Obtener periodoInicio y periodoFin desde localStorage
   const periodoInicio = localStorage.getItem("periodoInicio");
   const periodoFin = localStorage.getItem("periodoFin");
 
-  // Asegurarse de que los valores del periodo existan en localStorage
   const periodoValido = periodoInicio && periodoFin;
+
+  // Obtener las categorías desde la API
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/categorias`
+        );
+        setCategorias(response.data);
+
+        // Establecer "Todas" como valor predeterminado si está presente
+        const todasCategoria = response.data.find(
+          (c) => c.name === "Sin categoria"
+        );
+        if (todasCategoria) {
+          setCategoriaId(todasCategoria.id);
+        }
+      } catch (error) {
+        console.error("Error al obtener las categorías:", error);
+      }
+    };
+
+    fetchCategorias();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Evitar el doble envío si ya se está enviando el formulario
+
+    setIsSubmitting(true); // Deshabilitar el botón
 
     // Verifica si se han proporcionado los campos requeridos
     if (!tipoMovimiento || !descripcion || !monto || !fecha) {
       toast.error("Por favor, complete todos los campos.");
+      setIsSubmitting(false); // Volver a habilitar el botón
       return;
     }
 
     // Convertir el monto a float antes de enviarlo al backend
     const montoFloat = parseFloat(monto);
-
-    // Validación para asegurarse de que el monto sea un número válido
     if (isNaN(montoFloat)) {
       toast.error("El monto debe ser un número válido.");
+      setIsSubmitting(false);
       return;
     }
 
     const formatDate = (date) => {
       const d = new Date(date);
-      const day = d.getUTCDate().toString().padStart(2, "0"); // Usar getUTCDate() para obtener el día en UTC
-      const month = (d.getUTCMonth() + 1).toString().padStart(2, "0"); // getUTCMonth() para el mes en UTC
-      const year = d.getUTCFullYear(); // getUTCFullYear() para el año en UTC
-
+      const day = d.getUTCDate().toString().padStart(2, "0");
+      const month = (d.getUTCMonth() + 1).toString().padStart(2, "0");
+      const year = d.getUTCFullYear();
       return `${day}-${month}-${year}`;
     };
 
     // Verificar si la fecha está dentro del rango permitido
     if (periodoValido) {
-      const periodoInicio = localStorage.getItem("periodoInicio");
-      const periodoFin = localStorage.getItem("periodoFin");
-
       const startDate = new Date(periodoInicio);
       const endDate = new Date(periodoFin);
-
       const selectedDate = new Date(fecha);
 
       if (selectedDate < startDate || selectedDate > endDate) {
         const formattedStartDate = formatDate(periodoInicio);
         const formattedEndDate = formatDate(periodoFin);
-
         toast.error(
           `La fecha está fuera de tu periodo: ${formattedStartDate} al ${formattedEndDate}`
         );
+        setIsSubmitting(false);
         return;
       }
     } else {
       toast.error("No se encontraron los datos del periodo.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -74,30 +100,37 @@ const Movimientos = () => {
     formData.append("descripcion", descripcion);
     formData.append("monto", montoFloat);
     formData.append("fecha", fecha);
+    formData.append("categoriaId", parseInt(categoriaId, 10));
 
-    // Si hay una imagen, añadirla al formulario
     if (image) {
-      formData.append("image", image); // El nombre del campo de imagen debe coincidir con lo que espera el backend
+      formData.append("image", image);
     }
 
     try {
-      // Intentar crear el movimiento enviando el FormData al backend
       await createMovement(formData);
+      toast.success("Movimiento registrado con éxito.");
 
-      // Limpiar el formulario después de agregar el movimiento
+      // Limpiar el formulario y restablecer la categoría a "Todas"
       setTipoMovimiento("");
       setDescripcion("");
       setMonto("");
       setFecha("");
-      setImage(null); // Limpiar imagen
+      setImage(null);
+      setCategoriaId(""); // Limpiar categoría seleccionada
 
-      // Resetear el formulario (esto también limpiará el campo de la imagen)
+      // Buscar la categoría "Todas" y setearla como predeterminada después de enviar
+      const todasCategoria = categorias.find((c) => c.name === "Todas");
+      if (todasCategoria) {
+        setCategoriaId(todasCategoria.id);
+      }
+
+      // Resetear el formulario
       e.target.reset();
-
-      toast.success("Movimiento registrado con éxito.");
     } catch (err) {
       toast.error("Error al registrar el movimiento.");
       console.error("Error al registrar movimiento:", err);
+    } finally {
+      setIsSubmitting(false); // Volver a habilitar el botón
     }
   };
 
@@ -107,6 +140,7 @@ const Movimientos = () => {
         Registrar Movimiento
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Campo Tipo de Movimiento */}
         <div>
           <label
             htmlFor="tipoMovimiento"
@@ -125,7 +159,28 @@ const Movimientos = () => {
             <option value="egreso">Egreso</option>
           </select>
         </div>
-
+        {/* Campo Categoría */}
+        <div>
+          <label
+            htmlFor="categoria"
+            className="block text-lg font-medium text-gray-700"
+          >
+            Categoría
+          </label>
+          <select
+            id="categoria"
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
+            className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {categorias.map((categoria) => (
+              <option key={categoria.id} value={categoria.id}>
+                {categoria.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Campo Descripción */}
         <div>
           <label
             htmlFor="descripcion"
@@ -143,6 +198,7 @@ const Movimientos = () => {
           />
         </div>
 
+        {/* Campo Monto */}
         <div>
           <label
             htmlFor="monto"
@@ -160,6 +216,7 @@ const Movimientos = () => {
           />
         </div>
 
+        {/* Campo Fecha */}
         <div>
           <label
             htmlFor="fecha"
@@ -176,6 +233,7 @@ const Movimientos = () => {
           />
         </div>
 
+        {/* Campo Imagen */}
         <div>
           <label
             htmlFor="image"
@@ -193,14 +251,16 @@ const Movimientos = () => {
           />
         </div>
 
+        {/* Botón de Enviar */}
         <button
           type="submit"
           className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition duration-200"
+          disabled={isSubmitting} // Deshabilitar el botón mientras se está enviando
         >
           Añadir Movimiento
         </button>
       </form>
-      <ToastContainer /> {/* Añadimos el contenedor para mostrar los toasts */}
+      <ToastContainer />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 const express = require("express");
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("./controllers/prisma"); // Importa la instancia centralizada de Prisma
 const authenticateJWT = require("./middlewares/authenticateJWT");
 const authController = require("./controllers/authController");
 const reportController = require("./controllers/reportController");
@@ -7,9 +7,6 @@ const upload = require("./config/multer"); // Importa el middleware multer confi
 const cors = require("cors");
 const cloudinary = require("./config/cloudinary"); // Importa Cloudinary configurado
 const { prismaMiddleware } = require("./middlewares/prismaMiddleware"); // Importa el middleware
-
-// Crear una única instancia de PrismaClient para usar en toda la aplicación
-const prisma = new PrismaClient();
 
 // Configuración de la aplicación
 const app = express();
@@ -58,6 +55,12 @@ app.get("/user", async (req, res) => {
   }
 });
 
+app.put(
+  "/movimiento/:id",
+  authenticateJWT, // Middleware para verificar JWT
+  reportController.updateMovement // Controlador que maneja la actualización del movimiento
+);
+
 // Ruta para crear un movimiento (con imagen)
 app.post(
   "/movimiento",
@@ -79,6 +82,13 @@ app.put(
 
 // Ruta para obtener los movimientos
 app.get("/movimientos", authenticateJWT, reportController.getMovements);
+
+// **Nueva ruta para obtener los movimientos por área**
+app.get(
+  "/movimientos/area",
+  authenticateJWT,
+  reportController.getMovementsByArea
+);
 
 // Ruta para eliminar un movimiento
 app.delete("/movimiento/:id", authenticateJWT, async (req, res) => {
@@ -125,4 +135,49 @@ app.delete("/api/delete-image", authenticateJWT, async (req, res) => {
 // Iniciar servidor
 app.listen(3001, () => {
   console.log("Servidor corriendo en el puerto 3001");
+});
+
+// Ruta para obtener el nombre de usuario por userId
+app.get("/user/:id", authenticateJWT, async (req, res) => {
+  const { id } = req.params; // Extrae el ID del usuario de los parámetros de la URL
+
+  try {
+    // Usamos Prisma para buscar al usuario por su ID
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { username: true }, // Solo seleccionamos el campo 'username'
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.status(200).json(user); // Devolvemos solo el 'username'
+  } catch (error) {
+    console.error("Error al obtener el usuario:", error);
+    res.status(500).json({ message: "Error al obtener el usuario" });
+  }
+});
+
+app.get("/api/categorias", async (req, res) => {
+  try {
+    // Consulta todas las categorías
+    const categorias = await prisma.categoria.findMany({
+      select: {
+        id: true,
+        name: true, // Incluye el nombre de la categoría
+      },
+    });
+
+    // Si no hay categorías, retorna un mensaje adecuado
+    if (!categorias || categorias.length === 0) {
+      return res.status(404).json({ message: "No se encontraron categorías" });
+    }
+
+    // Retorna las categorías
+    return res.status(200).json(categorias);
+  } catch (error) {
+    console.error("Error al obtener las categorías:", error);
+    return res.status(500).json({ message: "Error al obtener las categorías" });
+  }
 });

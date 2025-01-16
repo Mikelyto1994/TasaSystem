@@ -11,16 +11,15 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-blue-500 to-teal-500 text-white px-4 sm:px-6 lg:px-8">
-      <div className="text-center space-y-6">
+    <div className="pt-12 pb-12 flex flex-col justify-center items-center bg-gradient-to-r from-blue-500 to-teal-500 text-white px-4 sm:px-6 lg:px-8">
+      <div className="text-center space-y-20">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-          Bienvenida al módulo de registro de contabilidad -{" "}
-          <span className="text-orange-300">Iglesia Evangélica Peruana</span>
+          Bienvenid@ al módulo de registro de Ingresos/Egresos
         </h1>
         <p className="text-lg sm:text-xl max-w-xl mx-auto">
           Una plataforma intuitiva para gestionar los registros financieros de
-          forma eficiente. Comienza a llevar la contabilidad de la iglesia hoy
-          mismo.
+          forma eficiente. Comienza a llevar la contabilidad por ti mismo o con
+          un equipo :D
         </p>
 
         {/* Botón de login con transición y efecto hover */}

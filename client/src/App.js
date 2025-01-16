@@ -7,6 +7,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Reportes from "./components/Reportes";
 import General from "./pages/General";
+import useAuth from "./hooks/useAuth"; // Importa el hook useAuth
 
 // Componente para proteger rutas
 const PrivateRoute = ({ element, authenticated }) => {
@@ -16,6 +17,9 @@ const PrivateRoute = ({ element, authenticated }) => {
 const App = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [userName, setUserName] = useState("");
+
+  // Usar el hook useAuth para manejar la expiración del token
+  useAuth(setAuthenticated);
 
   // Usar useEffect para verificar si hay un usuario en el localStorage al cargar la app
   useEffect(() => {
