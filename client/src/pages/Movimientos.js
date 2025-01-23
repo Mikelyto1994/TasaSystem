@@ -13,6 +13,7 @@ const Movimientos = () => {
   const [categorias, setCategorias] = useState([]);
   const [categoriaId, setCategoriaId] = useState(""); // Estado para la categoría seleccionada
   const [isSubmitting, setIsSubmitting] = useState(false); // Estado para deshabilitar el botón mientras se envía el formulario
+  const [sinCategoriaId, setSinCategoriaId] = useState(""); // Nuevo estado para recordar "Sin categoría"
 
   // Obtener periodoInicio y periodoFin desde localStorage
   const periodoInicio = localStorage.getItem("periodoInicio");
@@ -29,12 +30,12 @@ const Movimientos = () => {
         );
         setCategorias(response.data);
 
-        // Establecer "Todas" como valor predeterminado si está presente
-        const todasCategoria = response.data.find(
+        const sinCategoria = response.data.find(
           (c) => c.name === "Sin categoria"
         );
-        if (todasCategoria) {
-          setCategoriaId(todasCategoria.id);
+        if (sinCategoria) {
+          setSinCategoriaId(sinCategoria.id);
+          setCategoriaId(sinCategoria.id);
         }
       } catch (error) {
         console.error("Error al obtener las categorías:", error);
@@ -116,13 +117,7 @@ const Movimientos = () => {
       setMonto("");
       setFecha("");
       setImage(null);
-      setCategoriaId(""); // Limpiar categoría seleccionada
-
-      // Buscar la categoría "Todas" y setearla como predeterminada después de enviar
-      const todasCategoria = categorias.find((c) => c.name === "Todas");
-      if (todasCategoria) {
-        setCategoriaId(todasCategoria.id);
-      }
+      setCategoriaId(sinCategoriaId); // ✅ Restablecer a "Sin categoría"
 
       // Resetear el formulario
       e.target.reset();

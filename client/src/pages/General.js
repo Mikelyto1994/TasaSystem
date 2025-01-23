@@ -272,7 +272,6 @@ const General = () => {
       });
 
       if (response.status === 200) {
-        console.log("✅ Imagen eliminada correctamente.");
         toast.success("Imagen eliminada correctamente.");
       } else {
         throw new Error("No se pudo eliminar la imagen de Cloudinary.");
@@ -319,10 +318,6 @@ const General = () => {
       return;
     }
 
-    console.log("🔍 selectedMovement:", selectedMovement);
-    console.log("🔍 selectedMovement.id:", selectedMovement?.id);
-    console.log("🔍 selectedMovement.imageUrl:", selectedMovement?.imageUrl);
-
     if (!selectedMovement?.id) {
       toast.error(
         "Error: No se puede actualizar la imagen, falta el ID del movimiento."
@@ -336,10 +331,6 @@ const General = () => {
     try {
       // Si hay una imagen previa, la eliminamos antes de subir la nueva
       if (selectedMovement?.imageUrl) {
-        console.log(
-          "🔴 Eliminando imagen anterior:",
-          selectedMovement.imageUrl
-        );
         await deleteImageFromCloudinary(
           selectedMovement.imageUrl,
           selectedMovement.id
@@ -347,7 +338,7 @@ const General = () => {
       }
 
       // Ahora subimos la nueva imagen
-      console.log("🔵 Subiendo nueva imagen...");
+
       await updateMovementImage(selectedMovement.id, formData);
 
       toast.success("Imagen actualizada correctamente.");
@@ -374,7 +365,7 @@ const General = () => {
 
     try {
       // Eliminar imagen de Cloudinary
-      console.log("🔴 Eliminando imagen de Cloudinary:", imageUrl);
+
       await deleteImageFromCloudinary(imageUrl, selectedMovement.id);
       setImageModalOpen(false);
       fetchMovements(); // Refrescar la lista de movimientos

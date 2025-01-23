@@ -290,19 +290,31 @@ const Reportes = () => {
     }
   };
 
-  const deleteImageFromCloudinary = async (imageUrl) => {
+  const deleteImageFromCloudinary = async (imageUrl, itemId) => {
+    if (!imageUrl || !itemId) {
+      console.error("❌ Error: imageUrl o itemId no proporcionados.", {
+        imageUrl,
+        itemId,
+      });
+      toast.error("Error: No se puede eliminar la imagen.");
+      return;
+    }
+
     const publicId = extractPublicIdFromImageUrl(imageUrl);
 
     try {
       const response = await axiosInstance.delete("/api/delete-image", {
-        data: { publicId },
+        data: { publicId, itemId }, // Enviar ambos valores correctamente
       });
 
-      if (response.status !== 200) {
+      if (response.status === 200) {
+        toast.success("Imagen eliminada correctamente.");
+      } else {
         throw new Error("No se pudo eliminar la imagen de Cloudinary.");
       }
     } catch (err) {
-      throw new Error("No se pudo eliminar la imagen de Cloudinary.");
+      console.error("❌ Error al eliminar imagen:", err);
+      toast.error("Error al eliminar la imagen.");
     }
   };
 
