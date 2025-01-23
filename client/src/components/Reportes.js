@@ -262,7 +262,7 @@ const Reportes = () => {
 
       // Si el movimiento tiene una imagen, eliminamos la imagen de Cloudinary
       if (imageUrl) {
-        await deleteImageFromCloudinary(imageUrl); // Función para eliminar imagen de Cloudinary
+        await deleteImageFromCloudinary(imageUrl, movementId); // ✅ Pasa movementId correctamente
       }
 
       // Eliminar el movimiento de la lista local de movimientos
@@ -544,15 +544,15 @@ const Reportes = () => {
                             </a>
                             <button
                               onClick={() => {
-                                if (mov.id) {
+                                if (mov.id && mov.movementUserId) {
                                   handleDelete(
                                     mov.id,
                                     mov.imageUrl,
                                     mov.movementUserId
-                                  ); // Pasa movementUserId
+                                  );
                                 } else {
                                   console.error(
-                                    "Movimiento no tiene un id válido"
+                                    "Movimiento no tiene un id válido o falta movementUserId"
                                   );
                                 }
                               }}
@@ -564,11 +564,20 @@ const Reportes = () => {
                         ) : (
                           <>
                             <button
-                              onClick={() => openImageModal(mov)}
+                              onClick={() => {
+                                if (mov && mov.id) {
+                                  openImageModal(mov);
+                                } else {
+                                  console.error(
+                                    "Movimiento no válido para añadir imagen"
+                                  );
+                                }
+                              }}
                               className="text-sm text-green-500 border border-green-500 px-3 py-1 rounded-md hover:bg-green-500 hover:text-white transition-colors"
                             >
                               Añadir Imagen
                             </button>
+
                             <button
                               onClick={() => {
                                 if (mov.id && mov.movementUserId) {

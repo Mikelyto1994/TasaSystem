@@ -234,7 +234,7 @@ const General = () => {
       await deleteMovement(movementId);
 
       if (imageUrl) {
-        await deleteImageFromCloudinary(imageUrl); // Función para eliminar imagen de Cloudinary
+        await deleteImageFromCloudinary(imageUrl, movementId); // ✅ Pasa movementId correctamente
       }
 
       setFilteredMovements((prevMovements) =>
