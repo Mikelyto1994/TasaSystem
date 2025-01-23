@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode"; // Asegúrate de usar la importación correcta
+import { useLocation, useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 const useAuth = (setAuthenticated) => {
   const navigate = useNavigate();
+  const location = useLocation(); // Obtenemos la ruta actual
 
   useEffect(() => {
     const checkTokenExpiration = () => {
@@ -11,42 +12,47 @@ const useAuth = (setAuthenticated) => {
 
       if (!token) {
         setAuthenticated(false);
-        navigate("/login");
+
+        // Solo redirigir a login si NO estamos en Home
+        if (location.pathname !== "/") {
+          navigate("/login");
+        }
+
         return;
       }
 
       try {
-        const decoded = jwtDecode(token); // Decodificamos el token JWT
-        const expirationTime = decoded.exp * 1000; // Tiempo de expiración en milisegundos
+        const decoded = jwtDecode(token);
+        const expirationTime = decoded.exp * 1000;
 
         if (expirationTime < Date.now()) {
-          // Si el token ya expiró
           setAuthenticated(false);
           localStorage.removeItem("periodoInicio");
           localStorage.removeItem("periodoFin");
           localStorage.removeItem("userId");
           localStorage.removeItem("token");
           localStorage.removeItem("userName");
-          navigate("/login");
+
+          if (location.pathname !== "/") {
+            navigate("/login");
+          }
         } else {
           setAuthenticated(true);
         }
       } catch {
-        // Si no se puede decodificar el token, consideramos que no está autenticado
         setAuthenticated(false);
-        navigate("/login");
+
+        if (location.pathname !== "/") {
+          navigate("/login");
+        }
       }
     };
 
-    // Verificamos la expiración del token inmediatamente al cargar la página
     checkTokenExpiration();
+    const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000);
 
-    // Configuramos un intervalo para verificar la expiración cada 30 minutos
-    const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000); // 30 minutos en milisegundos
-
-    // Limpiamos el intervalo cuando el componente se desmonte o cambie la autenticación
     return () => clearInterval(intervalId);
-  }, [navigate, setAuthenticated]);
+  }, [navigate, location, setAuthenticated]);
 };
 
 export default useAuth;
