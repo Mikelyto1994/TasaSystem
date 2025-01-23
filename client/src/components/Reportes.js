@@ -108,10 +108,9 @@ const Reportes = () => {
         return movDate >= startDate && movDate <= endDate;
       });
 
-      // Si se ha seleccionado una categoría (y no es la opción "Sin filtro"), filtrar los movimientos por la categoría
       if (categoriaId && categoriaId !== "") {
         filteredData = filteredData.filter(
-          (mov) => mov.categoria.id === categoriaId
+          (mov) => mov.categoriaId === parseInt(categoriaId)
         );
       }
 
