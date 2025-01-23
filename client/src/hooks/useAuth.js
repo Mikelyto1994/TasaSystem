@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import { useNavigate, useLocation } from "react-router-dom";
+import { jwtDecode } from "jwt-decode"; // Asegúrate de usar la importación correcta
 
 const useAuth = (setAuthenticated) => {
   const navigate = useNavigate();
-  const location = useLocation(); // Obtenemos la ruta actual
+  const location = useLocation(); // Obtiene la ruta actual
 
   useEffect(() => {
     const checkTokenExpiration = () => {
@@ -13,19 +13,19 @@ const useAuth = (setAuthenticated) => {
       if (!token) {
         setAuthenticated(false);
 
-        // Solo redirigir a login si NO estamos en Home
+        // Solo redirigir a login si la ruta NO es pública
         if (location.pathname !== "/") {
           navigate("/login");
         }
-
         return;
       }
 
       try {
-        const decoded = jwtDecode(token);
-        const expirationTime = decoded.exp * 1000;
+        const decoded = jwtDecode(token); // Decodificamos el token JWT
+        const expirationTime = decoded.exp * 1000; // Tiempo de expiración en milisegundos
 
         if (expirationTime < Date.now()) {
+          // Si el token ya expiró
           setAuthenticated(false);
           localStorage.removeItem("periodoInicio");
           localStorage.removeItem("periodoFin");
@@ -41,7 +41,6 @@ const useAuth = (setAuthenticated) => {
         }
       } catch {
         setAuthenticated(false);
-
         if (location.pathname !== "/") {
           navigate("/login");
         }
@@ -49,10 +48,12 @@ const useAuth = (setAuthenticated) => {
     };
 
     checkTokenExpiration();
+
+    // Verificamos la expiración cada 30 minutos
     const intervalId = setInterval(checkTokenExpiration, 30 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [navigate, location, setAuthenticated]);
+  }, [navigate, location, setAuthenticated]); // Se ejecuta cuando cambia la ruta
 };
 
 export default useAuth;
