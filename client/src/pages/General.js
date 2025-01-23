@@ -74,17 +74,36 @@ const General = () => {
 
       let filtered = [...movements];
 
+      // Filtro por tipo de movimiento
       if (filter.type) {
         filtered = filtered.filter(
           (movement) => movement.tipoMovimiento === filter.type
         );
       }
 
+      // Filtro por categoría
       if (filter.categoria && filter.categoria !== "") {
-        // Convertimos ambos valores a cadenas antes de comparar
         filtered = filtered.filter(
           (movement) => movement.categoria.id.toString() === filter.categoria
         );
+      }
+
+      // **Filtro por fecha (startDate y endDate)**
+      if (filter.startDate || filter.endDate) {
+        filtered = filtered.filter((movement) => {
+          const movementDate = new Date(movement.fecha).setHours(0, 0, 0, 0);
+          const startDate = filter.startDate
+            ? new Date(filter.startDate).setHours(0, 0, 0, 0)
+            : null;
+          const endDate = filter.endDate
+            ? new Date(filter.endDate).setHours(23, 59, 59, 999)
+            : null;
+
+          return (
+            (!startDate || movementDate >= startDate) &&
+            (!endDate || movementDate <= endDate)
+          );
+        });
       }
 
       setFilteredMovements(filtered);
