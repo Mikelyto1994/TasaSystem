@@ -231,12 +231,10 @@ const General = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await deleteMovement(movementId);
-
       if (imageUrl) {
         await deleteImageFromCloudinary(imageUrl, movementId); // ✅ Pasa movementId correctamente
       }
-
+      await deleteMovement(movementId);
       setFilteredMovements((prevMovements) =>
         prevMovements.filter((mov) => mov.id !== movementId)
       );
@@ -380,8 +378,6 @@ const General = () => {
       await deleteImageFromCloudinary(imageUrl, selectedMovement.id);
       setImageModalOpen(false);
       fetchMovements(); // Refrescar la lista de movimientos
-
-      toast.success("Imagen eliminada correctamente.");
 
       await refreshReport();
     } catch (err) {

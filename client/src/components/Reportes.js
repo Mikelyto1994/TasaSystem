@@ -258,13 +258,12 @@ const Reportes = () => {
 
     try {
       // Primero eliminamos el movimiento en la base de datos
-      await deleteMovement(movementId);
 
       // Si el movimiento tiene una imagen, eliminamos la imagen de Cloudinary
       if (imageUrl) {
         await deleteImageFromCloudinary(imageUrl, movementId); // ✅ Pasa movementId correctamente
       }
-
+      await deleteMovement(movementId);
       // Eliminar el movimiento de la lista local de movimientos
       setMovimientos((prevMovimientos) =>
         prevMovimientos.filter((mov) => mov.id !== movementId)
