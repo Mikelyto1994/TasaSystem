@@ -40,11 +40,15 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
       <div className="max-w-screen-xl mx-auto flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center space-x-4">
-          <img
-            src="/assets/logo.png" // Asegúrate de que el logo esté en esta ruta
-            alt="Logo"
-            className="w-20 h-20"
-          />
+          <Link to="/">
+            {" "}
+            {/* Envuelve la imagen en un Link */}
+            <img
+              src="/assets/logo.png" // Asegúrate de que el logo esté en esta ruta
+              alt="Logo"
+              className="w-20 h-20 cursor-pointer"
+            />
+          </Link>
         </div>
 
         {/* Enlaces desktop */}
