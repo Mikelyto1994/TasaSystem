@@ -71,7 +71,7 @@ const createMovement = async (req, res) => {
         return new Promise((resolve, reject) => {
           const uploadResponse = cloudinary.uploader.upload_stream(
             {
-              folder: "images_Tesoreria", // Configuración de Cloudinary
+              folder: "Modelo_Images", // Configuración de Cloudinary
               transformation: [
                 {
                   width: 800,
@@ -207,7 +207,7 @@ const updateMovementImage = async (req, res) => {
       return new Promise((resolve, reject) => {
         const uploadResponse = cloudinary.uploader.upload_stream(
           {
-            folder: "images_Tesoreria", // Configuración de Cloudinary
+            folder: "Modelo_Images", // Configuración de Cloudinary
             transformation: [
               {
                 width: 800,
@@ -444,7 +444,7 @@ const updateMovement = async (req, res) => {
         return new Promise((resolve, reject) => {
           const uploadResponse = cloudinary.uploader.upload_stream(
             {
-              folder: "images_Tesoreria", // Configuración de Cloudinary
+              folder: "Modelo_Images", // Configuración de Cloudinary
               transformation: [
                 {
                   width: 800,
