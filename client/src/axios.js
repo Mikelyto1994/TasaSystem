@@ -6,7 +6,7 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json", // Asegurarnos de que el tipo de contenido es JSON
   },
-  timeout: 4000, // Tiempo de espera de la solicitud en 10 segundos (ajustable)
+  timeout: 6000, // Tiempo de espera de la solicitud en 10 segundos (ajustable)
 });
 
 // Interceptor para agregar el token JWT en cada solicitud
