@@ -6,49 +6,43 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 export const loginUser = async (username, password) => {
   try {
     // Enviar las credenciales al backend para hacer login
-    const response = await axiosInstance.post("/login", {
-      username,
-      password,
-    });
+    const response = await axiosInstance.post("/login", { username, password });
 
-    // Verifica la respuesta completa
+    // Desestructurar la respuesta para obtener los datos necesarios
+    const { token, periodoInicio, periodoFin, userId } = response.data;
 
-    // Desestructurar la respuesta para obtener los tiempos
-    const {
-      token,
-      periodoInicio,
-      periodoFin,
-      loginTime,
-      userId,
-      bcryptTime,
-      userTime,
-    } = response.data;
+    // Validar que los datos necesarios estén presentes en la respuesta
+    if (!token || !periodoInicio || !periodoFin || !userId) {
+      throw new Error("Datos incompletos en la respuesta del servidor");
+    }
 
-    // Verifica si los tiempos vienen correctamente
-
-    // Guardar el token y las fechas de periodo en localStorage
+    // Almacenar los datos en localStorage solo si la respuesta es exitosa
     localStorage.setItem("token", token);
     localStorage.setItem("periodoInicio", periodoInicio);
     localStorage.setItem("periodoFin", periodoFin);
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("userName", username); // Guardar el username
 
-    // Retorna los datos de la respuesta (token, fechas, y tiempos)
+    // Retornar los datos relevantes para la sesión del usuario
     return {
       token,
       periodoInicio,
       periodoFin,
       userId,
-      loginTime,
-      bcryptTime,
-      userTime,
+      username, // Devolver username también
     };
   } catch (error) {
+    // Manejo de errores mejorado: mostrar un mensaje claro al usuario
     console.error(
       "Error en el login:",
       error.response ? error.response.data : error.message
     );
+
+    // Lanza un error con un mensaje claro para ser manejado en el componente que llama a esta función
     throw new Error(
-      "Error en el login: " +
-        (error.response ? error.response.data.error : error.message)
+      `Error al iniciar sesión: ${
+        error.response ? error.response.data.error : error.message
+      }`
     );
   }
 };

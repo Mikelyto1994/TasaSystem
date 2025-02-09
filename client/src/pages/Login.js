@@ -30,26 +30,34 @@ const Login = ({ setAuthenticated, setUserName }) => {
 
     setLoading(true);
     try {
+      // Llamada al backend para obtener el token, periodoInicio, periodoFin, userId
       const response = await loginUser(username, password);
-      const { token, userId } = response; // Desestructuración para obtener el userId
+      const {
+        token,
+        userId,
+        periodoInicio,
+        periodoFin,
+        username: userNameFromResponse,
+      } = response;
 
       if (!token) {
         throw new Error("No se recibió un token válido.");
       }
 
-      // Guardar el token, el nombre de usuario y el userId en localStorage
-      localStorage.setItem("token", token);
-      localStorage.setItem("userName", username);
-      localStorage.setItem("userId", userId); // Guardamos el userId
+      // Actualizamos el username y los demás datos en el localStorage
+      localStorage.setItem("userName", userNameFromResponse);
+
+      // Ya guardamos los otros datos en loginUser, no es necesario repetirlo
 
       // Actualizar el estado de autenticación
       setAuthenticated(true);
-      setUserName(username);
+      setUserName(userNameFromResponse); // Actualizar el nombre de usuario en el estado
 
-      // Redirigir a la página de movimientos
+      // Redirigir al usuario a la página de movimientos
       navigate("/movimientos");
     } catch (err) {
-      setError("Credenciales incorrectas. Intenta nuevamente.");
+      // Mostrar un mensaje de error específico
+      setError(err.message || "Credenciales incorrectas. Intenta nuevamente.");
       console.error("Error en el login:", err);
     } finally {
       setLoading(false);

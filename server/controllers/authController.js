@@ -44,54 +44,44 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const start = Date.now(); // Marca el inicio de la operación de login
   try {
     const { username, password } = req.body;
 
-    const userStart = Date.now();
+    // Buscar el usuario en la base de datos
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
         id: true,
         username: true,
-        password: true, // Obtén la contraseña en texto plano
-        periodoInicio: true,
-        periodoFin: true,
+        password: true, // La contraseña en texto plano
+        periodoInicio: true, // Necesario para validar el acceso
+        periodoFin: true, // Necesario para validar el acceso
       },
     });
 
-    const userTime = Date.now() - userStart;
-
+    // Si no se encuentra el usuario, devolver un error
     if (!user) {
       return res.status(400).json({ error: "Usuario no encontrado" });
     }
 
-    // Verifica si el user tiene los campos correctos antes de la validación de la contraseña
-
-    // Comparación de contraseñas en texto plano (sin bcrypt)
+    // Comparar las contraseñas en texto plano (sin bcrypt)
     if (password !== user.password) {
       return res.status(400).json({ error: "Contraseña incorrecta" });
     }
 
-    // Generación del JWT
-    const tokenStart = Date.now();
+    // Generar el JWT
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: "3h" }
+      { expiresIn: "3h" } // Puedes ajustar la expiración según tu necesidad
     );
 
-    const tokenTime = Date.now() - tokenStart;
-
-    const totalTime = Date.now() - start;
-
+    // Enviar la respuesta al cliente
     return res.status(200).json({
       token,
-      userId: user.id, // Aquí agregamos el userId en la respuesta
-      periodoInicio: user.periodoInicio,
-      periodoFin: user.periodoFin,
-      loginTime: totalTime, // Tiempo total de ejecución del login
-      userTime, // Tiempo de la consulta del usuario
+      userId: user.id,
+      periodoInicio: user.periodoInicio, // Se mantiene para validaciones
+      periodoFin: user.periodoFin, // Se mantiene para validaciones
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
