@@ -54,40 +54,40 @@ const login = async (req, res) => {
         id: true,
         username: true,
         password: true, // La contraseña en texto plano
-        periodoInicio: true, // Necesario para validar el acceso
-        periodoFin: true, // Necesario para validar el acceso
+        periodoInicio: true,
+        periodoFin: true,
       },
     });
 
-    // Si no se encuentra el usuario, devolver un error
+    // Si no se encuentra el usuario
     if (!user) {
-      return res.status(400).json({ error: "Usuario no encontrado" });
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    // Comparar las contraseñas en texto plano (sin bcrypt)
+    // Comparar las contraseñas (OJO: Esto debería hacerse con bcrypt, no en texto plano)
     if (password !== user.password) {
-      return res.status(400).json({ error: "Contraseña incorrecta" });
+      return res.status(401).json({ error: "Contraseña incorrecta" });
     }
 
     // Generar el JWT
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: "3h" } // Puedes ajustar la expiración según tu necesidad
+      { expiresIn: "3h" }
     );
 
-    // Enviar la respuesta al cliente
+    // Responder con el token y otros datos
     return res.status(200).json({
       token,
       userId: user.id,
-      periodoInicio: user.periodoInicio, // Se mantiene para validaciones
-      periodoFin: user.periodoFin, // Se mantiene para validaciones
+      periodoInicio: user.periodoInicio,
+      periodoFin: user.periodoFin,
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     return res
       .status(500)
-      .json({ error: "Error al iniciar sesión. Por favor, intenta más tarde" });
+      .json({ error: "Error del servidor al iniciar sesión" });
   }
 };
 

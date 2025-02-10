@@ -5,45 +5,45 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 // Login
 export const loginUser = async (username, password) => {
   try {
-    // Enviar las credenciales al backend para hacer login
     const response = await axiosInstance.post("/login", { username, password });
 
-    // Desestructurar la respuesta para obtener los datos necesarios
     const { token, periodoInicio, periodoFin, userId } = response.data;
 
-    // Validar que los datos necesarios estén presentes en la respuesta
     if (!token || !periodoInicio || !periodoFin || !userId) {
       throw new Error("Datos incompletos en la respuesta del servidor");
     }
 
-    // Almacenar los datos en localStorage solo si la respuesta es exitosa
     localStorage.setItem("token", token);
     localStorage.setItem("periodoInicio", periodoInicio);
     localStorage.setItem("periodoFin", periodoFin);
     localStorage.setItem("userId", userId);
-    localStorage.setItem("userName", username); // Guardar el username
+    localStorage.setItem("userName", username);
 
-    // Retornar los datos relevantes para la sesión del usuario
-    return {
-      token,
-      periodoInicio,
-      periodoFin,
-      userId,
-      username, // Devolver username también
-    };
+    return { token, periodoInicio, periodoFin, userId, username };
   } catch (error) {
-    // Manejo de errores mejorado: mostrar un mensaje claro al usuario
-    console.error(
-      "Error en el login:",
-      error.response ? error.response.data : error.message
-    );
+    console.error("Error en el login:", error);
 
-    // Lanza un error con un mensaje claro para ser manejado en el componente que llama a esta función
-    throw new Error(
-      `Error al iniciar sesión: ${
-        error.response ? error.response.data.error : error.message
-      }`
-    );
+    let errorMessage = "Error desconocido al iniciar sesión";
+
+    if (error.response) {
+      const { status, data } = error.response;
+      if (status === 401) {
+        errorMessage = "Contraseña incorrecta";
+      } else if (status === 400) {
+        errorMessage = data?.error || "Usuario no encontrado";
+      } else if (status === 500) {
+        errorMessage = "Error interno del servidor. Intente más tarde.";
+      } else {
+        errorMessage = data?.error || "Error en la autenticación";
+      }
+    } else if (error.request) {
+      errorMessage =
+        "No se pudo conectar con el servidor. Verifique su conexión.";
+    } else {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
   }
 };
 
