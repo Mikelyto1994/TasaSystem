@@ -454,51 +454,149 @@ const General = () => {
   const handleExportToPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Reporte General de Movimientos", 14, 10);
+    doc.text("Reporte Trimestral de Movimientos", 14, 10);
 
-    // Definir las columnas y los datos de la tabla
-    const tableColumn = [
-      "Fecha",
-      "Tipo",
-      "Categoría",
-      "Descripción",
-      "Monto",
-      "Responsable",
-    ];
-    const tableRows = filteredMovements.map((movement) => [
-      new Date(movement.fecha).toLocaleDateString(),
-      movement.tipoMovimiento,
-      movement.categoria?.name || "Sin categoría",
-      movement.descripcion,
-      movement.monto.toFixed(2),
-      responsibleNames[movement.userId] || "Desconocido",
-    ]);
+    // Función para obtener el trimestre de una fecha
+    const getTrimestre = (date) => {
+      const month = date.getMonth() + 1; // Mes en base 1
+      if (month >= 1 && month <= 3) return "1er Trimestre";
+      if (month >= 4 && month <= 6) return "2do Trimestre";
+      if (month >= 7 && month <= 9) return "3er Trimestre";
+      return "4to Trimestre";
+    };
 
-    // Agregar tabla al PDF
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
+    // Agrupar movimientos por trimestre y año
+    const trimestreMap = {};
+    filteredMovements.forEach((movement) => {
+      const date = new Date(movement.fecha);
+      date.setDate(date.getDate() + 1); // ✅ Sumar 1 día antes de clasificar el trimestre
+
+      const year = date.getFullYear();
+      const trimestre = `${getTrimestre(date)} - ${year}`; // Formato "X Trimestre - Año XXXX"
+
+      if (!trimestreMap[trimestre]) {
+        trimestreMap[trimestre] = { ingresos: [], egresos: [] };
+      }
+
+      if (movement.tipoMovimiento === "ingreso") {
+        trimestreMap[trimestre].ingresos.push(movement);
+      } else {
+        trimestreMap[trimestre].egresos.push(movement);
+      }
     });
 
-    // Obtener la última posición de la tabla
-    const finalY = doc.lastAutoTable.finalY || 30;
+    // Ordenar trimestres del más reciente al más antiguo
+    const trimestresOrdenados = Object.keys(trimestreMap).sort((a, b) => {
+      const [trimestreA, yearA] = a.split(" - ");
+      const [trimestreB, yearB] = b.split(" - ");
 
-    // Agregar totales debajo de la tabla
-    doc.text(
-      `Total Ingreso: ${totalIngreso.toFixed(2)} Soles`,
-      14,
-      finalY + 10
-    );
-    doc.text(`Total Egreso: ${totalEgreso.toFixed(2)} Soles`, 14, finalY + 20);
-    doc.text(
-      `Total Diferencia: ${totalDiferencia.toFixed(2)} Soles`,
-      14,
-      finalY + 30
-    );
+      if (yearA !== yearB) return yearB - yearA; // Primero por año (descendente)
+
+      // Ordenar por trimestre en orden 1, 2, 3, 4 (descendente)
+      const trimestreOrder = {
+        "1er Trimestre": 1,
+        "2do Trimestre": 2,
+        "3er Trimestre": 3,
+        "4to Trimestre": 4,
+      };
+
+      return trimestreOrder[trimestreB] - trimestreOrder[trimestreA];
+    });
+
+    // Función para generar cada trimestre
+    const generateTrimestreSection = (title, movements, startY, color) => {
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(title, 14, startY);
+      doc.setTextColor(0, 0, 0); // Restablecer color
+
+      if (movements.length === 0) {
+        doc.text("No hay movimientos en este período.", 14, startY + 10);
+        return startY + 20;
+      }
+
+      const tableRows = movements.map((movement) => {
+        const fechaAjustada = new Date(movement.fecha);
+        fechaAjustada.setDate(fechaAjustada.getDate() + 1); // ✅ Sumar 1 día también en la tabla
+
+        return [
+          fechaAjustada.toLocaleDateString(),
+          movement.tipoMovimiento,
+          movement.categoria?.name || "Sin categoría",
+          movement.descripcion,
+          {
+            content: movement.monto.toFixed(2),
+            styles: { textColor: color },
+          },
+          responsibleNames[movement.userId] || "Desconocido",
+        ];
+      });
+
+      doc.autoTable({
+        head: [
+          ["Fecha", "Tipo", "Categoría", "Descripción", "Monto", "Responsable"],
+        ],
+        body: tableRows,
+        startY: startY + 10,
+      });
+
+      return doc.lastAutoTable.finalY + 10;
+    };
+
+    let currentY = 20;
+
+    // Recorrer todos los trimestres y generar el reporte en orden
+    trimestresOrdenados.forEach((trimestre) => {
+      const { ingresos, egresos } = trimestreMap[trimestre];
+
+      // Dibujar una línea horizontal antes de cada trimestre
+      doc.setDrawColor(0); // Color negro
+      doc.line(10, currentY, 200, currentY); // Línea de extremo a extremo
+      currentY += 5;
+
+      doc.setFontSize(14);
+      doc.text(`Trimestre ${trimestre}`, 14, currentY);
+      currentY += 10;
+
+      // Totales del trimestre
+      const totalIngreso = ingresos.reduce((acc, m) => acc + m.monto, 0);
+      const totalEgreso = egresos.reduce((acc, m) => acc + m.monto, 0);
+      const totalDiferencia = totalIngreso - totalEgreso;
+
+      // Sección de ingresos
+      currentY = generateTrimestreSection(
+        `Total de Ingreso => ${totalIngreso.toFixed(2)} Soles`,
+        ingresos,
+        currentY,
+        [0, 128, 0] // Verde
+      );
+
+      // Sección de egresos
+      currentY = generateTrimestreSection(
+        `Total de Egreso => ${totalEgreso.toFixed(2)} Soles`,
+        egresos,
+        currentY,
+        [255, 0, 0] // Rojo
+      );
+
+      // Diferencia final con color dinámico
+      const diferenciaColor = totalDiferencia >= 0 ? [0, 128, 0] : [255, 0, 0];
+      doc.setTextColor(
+        diferenciaColor[0],
+        diferenciaColor[1],
+        diferenciaColor[2]
+      );
+      doc.text(
+        `Total Diferencia => ${totalDiferencia.toFixed(2)} Soles`,
+        14,
+        currentY
+      );
+      doc.setTextColor(0, 0, 0); // Restablecer color
+
+      currentY += 15; // Espaciado antes del siguiente trimestre
+    });
 
     // Guardar el PDF
-    doc.save("reporte_general.pdf");
+    doc.save("reporte_trimestral.pdf");
   };
 
   return (
