@@ -9,6 +9,8 @@ import {
 import Swal from "sweetalert2";
 import axiosInstance from "../axios"; // Asegúrate de importar la instancia correctamente
 import axios from "axios";
+import jsPDF from "jspdf";
+import "jspdf-autotable"; // Asegúrate de importar esta librería también
 
 const General = () => {
   const [filteredMovements, setFilteredMovements] = useState([]);
@@ -449,6 +451,55 @@ const General = () => {
     setEditMovement(movement); // Asignar el movimiento a editar
     setEditModalOpen(true); // Abrir el modal
   };
+  const handleExportToPDF = () => {
+    const doc = new jsPDF();
+
+    doc.text("Reporte General de Movimientos", 14, 10);
+
+    // Definir las columnas y los datos de la tabla
+    const tableColumn = [
+      "Fecha",
+      "Tipo",
+      "Categoría",
+      "Descripción",
+      "Monto",
+      "Responsable",
+    ];
+    const tableRows = filteredMovements.map((movement) => [
+      new Date(movement.fecha).toLocaleDateString(),
+      movement.tipoMovimiento,
+      movement.categoria?.name || "Sin categoría",
+      movement.descripcion,
+      movement.monto.toFixed(2),
+      responsibleNames[movement.userId] || "Desconocido",
+    ]);
+
+    // Agregar tabla al PDF
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+
+    // Obtener la última posición de la tabla
+    const finalY = doc.lastAutoTable.finalY || 30;
+
+    // Agregar totales debajo de la tabla
+    doc.text(
+      `Total Ingreso: ${totalIngreso.toFixed(2)} Soles`,
+      14,
+      finalY + 10
+    );
+    doc.text(`Total Egreso: ${totalEgreso.toFixed(2)} Soles`, 14, finalY + 20);
+    doc.text(
+      `Total Diferencia: ${totalDiferencia.toFixed(2)} Soles`,
+      14,
+      finalY + 30
+    );
+
+    // Guardar el PDF
+    doc.save("reporte_general.pdf");
+  };
 
   return (
     <div className="p-4 max-w-screen-xl mx-auto">
@@ -541,7 +592,14 @@ const General = () => {
           </button>
         </div>
       </form>
-
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={handleExportToPDF}
+          className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition"
+        >
+          Exportar a PDF
+        </button>
+      </div>
       {/* Mensajes de carga o error */}
       {loading && <p className="text-center text-blue-500 mt-4">Cargando...</p>}
       {error && <p className="text-center text-red-500 mt-4">{error}</p>}

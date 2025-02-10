@@ -8,6 +8,8 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "jwt-decode": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -44,9 +46,8 @@
     "tailwindcss": "^3.4.15"
   },
   "eslintConfig": {
-  "rules": {
-    "no-unused-vars": "off"
+    "rules": {
+      "no-unused-vars": "off"
+    }
   }
-}
-  
 }
