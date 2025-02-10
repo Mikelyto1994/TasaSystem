@@ -454,11 +454,12 @@ const General = () => {
   const handleExportToPDF = () => {
     const doc = new jsPDF();
 
+    doc.setLineHeightFactor(1); // ✅ Interlineado simple en el texto
     doc.text("Reporte Trimestral de Movimientos", 14, 10);
 
     // Función para obtener el trimestre de una fecha
     const getTrimestre = (date) => {
-      const month = date.getMonth() + 1; // Mes en base 1
+      const month = date.getMonth() + 1;
       if (month >= 1 && month <= 3) return "1er Trimestre";
       if (month >= 4 && month <= 6) return "2do Trimestre";
       if (month >= 7 && month <= 9) return "3er Trimestre";
@@ -469,10 +470,10 @@ const General = () => {
     const trimestreMap = {};
     filteredMovements.forEach((movement) => {
       const date = new Date(movement.fecha);
-      date.setDate(date.getDate() + 1); // ✅ Sumar 1 día antes de clasificar el trimestre
+      date.setDate(date.getDate() + 1); // ✅ Sumar 1 día
 
       const year = date.getFullYear();
-      const trimestre = `${getTrimestre(date)} - ${year}`; // Formato "X Trimestre - Año XXXX"
+      const trimestre = `${getTrimestre(date)} - ${year}`;
 
       if (!trimestreMap[trimestre]) {
         trimestreMap[trimestre] = { ingresos: [], egresos: [] };
@@ -490,9 +491,8 @@ const General = () => {
       const [trimestreA, yearA] = a.split(" - ");
       const [trimestreB, yearB] = b.split(" - ");
 
-      if (yearA !== yearB) return yearB - yearA; // Primero por año (descendente)
+      if (yearA !== yearB) return yearB - yearA;
 
-      // Ordenar por trimestre en orden 1, 2, 3, 4 (descendente)
       const trimestreOrder = {
         "1er Trimestre": 1,
         "2do Trimestre": 2,
@@ -507,16 +507,16 @@ const General = () => {
     const generateTrimestreSection = (title, movements, startY, color) => {
       doc.setTextColor(color[0], color[1], color[2]);
       doc.text(title, 14, startY);
-      doc.setTextColor(0, 0, 0); // Restablecer color
+      doc.setTextColor(0, 0, 0);
 
       if (movements.length === 0) {
-        doc.text("No hay movimientos en este período.", 14, startY + 10);
-        return startY + 20;
+        doc.text("No hay movimientos en este período.", 14, startY + 5);
+        return startY + 10;
       }
 
       const tableRows = movements.map((movement) => {
         const fechaAjustada = new Date(movement.fecha);
-        fechaAjustada.setDate(fechaAjustada.getDate() + 1); // ✅ Sumar 1 día también en la tabla
+        fechaAjustada.setDate(fechaAjustada.getDate() + 1);
 
         return [
           fechaAjustada.toLocaleDateString(),
@@ -536,26 +536,32 @@ const General = () => {
           ["Fecha", "Tipo", "Categoría", "Descripción", "Monto", "Responsable"],
         ],
         body: tableRows,
-        startY: startY + 10,
+        startY: startY + 5,
+        theme: "grid",
+        styles: {
+          fontSize: 9, // ✅ Fuente más pequeña
+          cellPadding: 1.5, // ✅ Espaciado reducido dentro de celdas
+        },
+        margin: { top: 5 },
       });
 
-      return doc.lastAutoTable.finalY + 10;
+      return doc.lastAutoTable.finalY + 5;
     };
 
-    let currentY = 20;
+    let currentY = 15;
 
     // Recorrer todos los trimestres y generar el reporte en orden
     trimestresOrdenados.forEach((trimestre) => {
       const { ingresos, egresos } = trimestreMap[trimestre];
 
       // Dibujar una línea horizontal antes de cada trimestre
-      doc.setDrawColor(0); // Color negro
-      doc.line(10, currentY, 200, currentY); // Línea de extremo a extremo
-      currentY += 5;
+      doc.setDrawColor(0);
+      doc.line(10, currentY, 200, currentY);
+      currentY += 6;
 
-      doc.setFontSize(14);
-      doc.text(`Trimestre ${trimestre}`, 14, currentY);
-      currentY += 10;
+      doc.setFontSize(12);
+      doc.text(` ${trimestre}`, 14, currentY);
+      currentY += 6;
 
       // Totales del trimestre
       const totalIngreso = ingresos.reduce((acc, m) => acc + m.monto, 0);
@@ -566,16 +572,16 @@ const General = () => {
       currentY = generateTrimestreSection(
         `Total de Ingreso => ${totalIngreso.toFixed(2)} Soles`,
         ingresos,
-        currentY,
-        [0, 128, 0] // Verde
+        (currentY += 2),
+        [0, 128, 0]
       );
 
       // Sección de egresos
       currentY = generateTrimestreSection(
         `Total de Egreso => ${totalEgreso.toFixed(2)} Soles`,
         egresos,
-        currentY,
-        [255, 0, 0] // Rojo
+        (currentY += 2),
+        [255, 0, 0]
       );
 
       // Diferencia final con color dinámico
@@ -588,11 +594,11 @@ const General = () => {
       doc.text(
         `Total Diferencia => ${totalDiferencia.toFixed(2)} Soles`,
         14,
-        currentY
+        (currentY += 2)
       );
-      doc.setTextColor(0, 0, 0); // Restablecer color
+      doc.setTextColor(0, 0, 0);
 
-      currentY += 15; // Espaciado antes del siguiente trimestre
+      currentY += 3;
     });
 
     // Guardar el PDF
