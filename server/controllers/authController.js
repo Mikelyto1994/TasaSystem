@@ -47,36 +47,31 @@ const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Buscar el usuario en la base de datos
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
         id: true,
         username: true,
-        password: true, // La contraseña en texto plano
+        password: true,
         periodoInicio: true,
         periodoFin: true,
       },
     });
 
-    // Si no se encuentra el usuario
     if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+      return res.status(400).json({ error: "Usuario no encontrado" });
     }
 
-    // Comparar las contraseñas (OJO: Esto debería hacerse con bcrypt, no en texto plano)
     if (password !== user.password) {
-      return res.status(401).json({ error: "Contraseña incorrecta" });
+      return res.status(400).json({ error: "Contraseña incorrecta" }); // Asegurar siempre un mensaje
     }
 
-    // Generar el JWT
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "3h" }
     );
 
-    // Responder con el token y otros datos
     return res.status(200).json({
       token,
       userId: user.id,
@@ -85,9 +80,7 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    return res
-      .status(500)
-      .json({ error: "Error del servidor al iniciar sesión" });
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 

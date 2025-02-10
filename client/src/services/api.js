@@ -26,19 +26,10 @@ export const loginUser = async (username, password) => {
     let errorMessage = "Error desconocido al iniciar sesión";
 
     if (error.response) {
-      const { status, data } = error.response;
-      if (status === 401) {
-        errorMessage = "Contraseña incorrecta";
-      } else if (status === 400) {
-        errorMessage = data?.error || "Usuario no encontrado";
-      } else if (status === 500) {
-        errorMessage = "Error interno del servidor. Intente más tarde.";
-      } else {
-        errorMessage = data?.error || "Error en la autenticación";
-      }
+      // Si el backend envió un mensaje de error, lo mostramos
+      errorMessage = error.response.data?.error || "Error en la autenticación";
     } else if (error.request) {
-      errorMessage =
-        "No se pudo conectar con el servidor. Verifique su conexión.";
+      errorMessage = "No se pudo conectar con el servidor";
     } else {
       errorMessage = error.message;
     }

@@ -58,7 +58,6 @@ const Login = ({ setAuthenticated, setUserName }) => {
     } catch (err) {
       // Mostrar un mensaje de error específico
       setError(err.message || "Credenciales incorrectas. Intenta nuevamente.");
-      console.error("Error en el login:", err);
     } finally {
       setLoading(false);
     }
