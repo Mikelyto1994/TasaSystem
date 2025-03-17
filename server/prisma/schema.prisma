@@ -14,14 +14,13 @@ model User {
   areaId        Int
   username      String   @unique
   password      String   // Asegúrate de encriptar la contraseña en el backend
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
   isAdmin       Boolean  @default(false)  // Campo para identificar si el usuario es administrador
   isDeleted     Boolean  @default(false)  // Campo para marcar si el usuario está deshabilitado
   area          Area     @relation(fields: [areaId], references: [id])
-  movements     Movimiento[]  // Relación con el modelo Movimiento
-  periodoInicio DateTime  // Fecha de inicio del periodo permitido
-  periodoFin    DateTime  // Fecha de fin del periodo permitido
+  ots           Ots[]    // Relación con Ots
+  otConsumibles OTConsumible[] // Relación con OTConsumible
+  componentes    Componente[] // Relación con Componente
+  repuestos      Repuesto[] // Relación con Repuesto
 }
 
 model Area {
@@ -30,25 +29,113 @@ model Area {
   users       User[]
 }
 
-model Categoria {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique  // Nombre de la categoría
-  movimientos Movimiento[] // Relación con los movimientos
+model Ots {
+  id                Int      @id @default(autoincrement())
+  name              String   @unique
+  OT                Float
+  equipoId          Int?     // Puede ser nulo si no hay un equipo asociado
+  descripcionEquipo String?   // Descripción del equipo si no hay un equipo asociado
+  zonaId            Int
+  ubicacionId       Int
+  userId           Int       // Clave foránea que referencia a User
+  ubicacionSinId    String?   // Campo de texto para ubicaciones sin ID
+  user             User       @relation(fields: [userId], references: [id]) // Relación con User
+  equipo           Equipo?    @relation(fields: [equipoId], references: [id]) // Relación con Equipo
+  ubicacion        Ubicacion  @relation(fields: [ubicacionId], references: [id])
+  zona             Zona       @relation(fields: [zonaId], references: [id])
+  otConsumibles    OTConsumible[] // Relación uno a muchos con OTConsumible
+}
+model OTConsumible {
+  id              Int      @id @default(autoincrement())
+  consumibleId    Int?     // Puede ser nulo si no hay un consumible asociado
+  nombreConsumible String?   // Nombre del consumible ingresado manualmente
+  unidadMedida    String?   // Unidad de medida del consumible ingresado manualmente
+  cantidad        Float?    // Cantidad del consumible ingresado manualmente
+  otId            Int      // Clave foránea que referencia a Ots
+  userId          Int       // Clave foránea que referencia a User
+  imageUrl        String?    // URL de la imagen (si se sube una)
+  images          Image[]    @relation("ConsumibleImage") // Relación con Image
+  user            User       @relation(fields: [userId], references: [id]) // Relación con User
+  estado          String?    // Estado del pedido (ej. "Solicitado", "No llega todavía")
+  reservaSap      String?    // Número de reserva SAP
+  comentarios      String?   // Comentarios sobre el pedido
+  ot              Ots       @relation(fields: [otId], references: [id]) // Relación con Ots
+  consumible      Consumible? @relation(fields: [consumibleId], references: [id]) // Relación con Consumible
 }
 
-model Movimiento {
-  id              Int          @id @default(autoincrement())
-  fecha           DateTime     @default(now())  // Fecha del movimiento
-  tipoMovimiento  TipoMovimiento  // Campo de tipo enum (ingreso o egreso)
-  descripcion     String       // Descripción del movimiento
-  monto           Float        // Monto del movimiento
-  imageUrl        String?      // URL de la imagen (si se sube una)
-  userId          Int
-  categoriaId     Int          // Nueva columna que referencia la categoría
-  user            User         @relation(fields: [userId], references: [id])
-  categoria       Categoria    @relation(fields: [categoriaId], references: [id]) // Relación con Categoria
-  images          Image[]      @relation("MovementImages") // Relación con Image
-  FechaCreacion   DateTime     @default(now())  // Fecha y hora de la creación del movimiento
+model Consumible {
+  id            Int      @id @default(autoincrement())
+  name          String
+  unidadMedida  String
+  codMaximo     String
+  nombreMaximo  String   // Cambiado a nombreMaximo para consistencia
+  otConsumibles  OTConsumible[] 
+}
+model Zona {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nombreMaximo  String   // Nuevo atributo
+  ubicaciones   Ubicacion[] // Relación uno a muchos con Ubicacion
+  equipos       Equipo[] // Relación uno a muchos con Equipo
+  ots           Ots[]    // Relación uno a muchos con Ots
+}
+
+model Ubicacion {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nombreMaximo  String   // Nuevo atributo
+  equipos       Equipo[] // Relación uno a muchos con Equipo
+  ots           Ots[]    // Relación uno a muchos con Ots
+zonaId        Int          // Clave foránea que referencia a Zona
+  zona          Zona         @relation(fields: [zonaId], references: [id]) // Relación con Zona
+}
+
+model Componente {
+  id            Int       @id @default(autoincrement())
+  equipoId      Int       // Clave foránea que referencia a Equipo
+  parteEquipo   String     // Parte del equipo a la que pertenece
+  imageUrl      String?    // URL de la imagen (si se sube una)
+  images        Image[]   @relation("ComponenteImage") // Relación con Image
+  userId        Int       // Clave foránea que referencia a User
+  equipo        Equipo     @relation(fields: [equipoId], references: [id]) // Relación con Equipo
+  atributos     Atributo[] // Relación uno a muchos con Atributo
+  user          User       @relation(fields: [userId], references: [id]) // Relación con User
+  repuestos     Repuesto[] // Relación uno a muchos con Repuesto
+}
+
+model Atributo {
+  id            Int       @id @default(autoincrement())
+  componenteId  Int       // Clave foránea que referencia a Componente
+  nombre        String     // Nombre del atributo (ej. "Marca")
+  valor         String?    // Valor del atributo (ej. "NETZSCH")
+  componente    Componente @relation(fields: [componenteId], references: [id]) // Relación con Componente
+}
+
+model Repuesto {
+  id            Int       @id @default(autoincrement())
+  componenteId  Int       // Clave foránea que referencia a Componente
+  nombre        String     // Nombre del repuesto
+  descripcion   String?    // Descripción del repuesto
+  imageUrl      String?    // URL de la imagen (si se sube una)
+  images        Image[]   @relation("RepuestoImage") // Relación con Image
+  userId        Int       // Clave foránea que referencia a User
+  componente    Componente @relation(fields: [componenteId], references: [id]) // Relación con Componente
+  user          User       @relation(fields: [userId], references: [id]) // Relación con User
+}
+
+model Equipo {
+  id            Int       @id @default(autoincrement())
+  name          String
+  nombreMaximo  String
+  zonaId        Int       // Clave foránea que referencia a Zona
+  ubicacionId   Int       // Clave foránea que referencia a Ubicacion
+  ubicacionSinId String?    // Campo de texto para ubicaciones sin ID
+  zona          Zona      @relation(fields: [zonaId], references: [id]) // Relación con Zona
+  ubicacion     Ubicacion @relation(fields: [ubicacionId], references: [id]) // Relación con Ubicación
+  imageUrl      String?   // URL de la imagen (si se sube una)
+  images        Image[]   @relation("EquipoImage") // Relación con Image
+  componentes    Componente[] // Relación uno a muchos con Componente
+  ots           Ots[]    // Relación uno a muchos con Ots
 }
 
 model Image {
@@ -56,10 +143,8 @@ model Image {
   url         String   // URL de la imagen
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  movements   Movimiento[]  @relation("MovementImages")
-}
-
-enum TipoMovimiento {
-  ingreso
-  egreso
+  componentess   Componente []  @relation("ComponenteImage")
+  consumibless   OTConsumible []  @relation("ConsumibleImage")
+  repuestoss   Repuesto []  @relation("RepuestoImage")
+  equiposs   Equipo []  @relation("EquipoImage")
 }

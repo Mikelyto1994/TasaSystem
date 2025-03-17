@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const prisma = require("./prisma"); // Importa desde el archivo prisma.j
 
 // Función de registro de usuario
@@ -53,8 +52,7 @@ const login = async (req, res) => {
         id: true,
         username: true,
         password: true,
-        periodoInicio: true,
-        periodoFin: true,
+        isAdmin: true, // Asegúrate de incluir isAdmin aquí
       },
     });
 
@@ -75,8 +73,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       token,
       userId: user.id,
-      periodoInicio: user.periodoInicio,
-      periodoFin: user.periodoFin,
+      isAdmin: user.isAdmin, // Asegúrate de incluir isAdmin aquí
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);

@@ -56,11 +56,6 @@ axiosInstance.interceptors.response.use(
       console.error("Headers:", error.response.headers);
 
       // Puedes agregar lógica para manejar ciertos códigos de error como 401 (no autorizado)
-      if (error.response.status === 401) {
-        // Si el token ha expirado o es inválido, eliminarlo del localStorage y redirigir al login
-        localStorage.removeItem("token");
-        window.location.href = "/login"; // Redirigir al login
-      }
 
       return Promise.reject(error.response); // Devolver la respuesta de error para que el frontend lo maneje
     } else if (error.request) {

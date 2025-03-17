@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const reportController = require("../controllers/reportController");
+const userController = require("../controllers/userController");
 const authenticateJWT = require("../middlewares/authenticateJWT");
 
 // Rutas de autenticación
@@ -30,6 +31,6 @@ router.delete(
 );
 
 // Ruta para obtener la información de un usuario sin autenticación
-router.get("/user", userController.getUser); // No necesita autenticación
+router.get("/:id", userController.getUser); // No necesita autenticación
 
 module.exports = router;

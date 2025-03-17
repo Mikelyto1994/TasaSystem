@@ -5,21 +5,28 @@ import axiosInstance from "../axios"; // Asegúrate de que la ruta sea correcta
 // Login
 export const loginUser = async (username, password) => {
   try {
+    // Realiza la solicitud de inicio de sesión
     const response = await axiosInstance.post("/login", { username, password });
 
-    const { token, periodoInicio, periodoFin, userId } = response.data;
+    // Desestructura los datos de la respuesta
+    const { token, userId, isAdmin } = response.data;
 
-    if (!token || !periodoInicio || !periodoFin || !userId) {
+    // Agregar un console.log para ver la respuesta completa
+    console.log("Respuesta del servidor:", response.data);
+
+    // Verifica que todos los datos necesarios estén presentes
+    if (!token || !userId) {
       throw new Error("Datos incompletos en la respuesta del servidor");
     }
 
+    // Almacena los datos en el localStorage
     localStorage.setItem("token", token);
-    localStorage.setItem("periodoInicio", periodoInicio);
-    localStorage.setItem("periodoFin", periodoFin);
     localStorage.setItem("userId", userId);
     localStorage.setItem("userName", username);
+    localStorage.setItem("isAdmin", isAdmin); // Almacena si el usuario es administrador
 
-    return { token, periodoInicio, periodoFin, userId, username };
+    // Devuelve los datos del usuario
+    return { token, userId, username, isAdmin };
   } catch (error) {
     console.error("Error en el login:", error);
 
@@ -38,6 +45,35 @@ export const loginUser = async (username, password) => {
   }
 };
 
+export const createOT = async (otData, token) => {
+  try {
+    const response = await axiosInstance.post("/ots/", otData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Agregar el token de autorización
+      },
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error en la creación de OT:", err);
+    throw err;
+  }
+};
+
+export const createOTConsumible = async (otConsumibleData, token) => {
+  try {
+    const response = await axiosInstance.post("/otc", otConsumibleData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Agregar el token de autorización
+      },
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Error en la creación de OTConsumible:", err);
+    throw err;
+  }
+};
 // Registrar un movimiento (Ingreso/Egreso)
 export const createMovement = async (movementData) => {
   try {

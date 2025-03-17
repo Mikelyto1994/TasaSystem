@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../services/api";
+import { loginUser  } from "../services/api";
 
 const Login = ({ setAuthenticated, setUserName }) => {
   const [username, setUsername] = useState("");
@@ -12,7 +12,6 @@ const Login = ({ setAuthenticated, setUserName }) => {
   // Verificación de si el usuario ya está autenticado al cargar la página
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     const storedUserName = localStorage.getItem("userName");
 
     if (token && storedUserName) {
@@ -30,28 +29,25 @@ const Login = ({ setAuthenticated, setUserName }) => {
 
     setLoading(true);
     try {
-      // Llamada al backend para obtener el token, periodoInicio, periodoFin, userId
-      const response = await loginUser(username, password);
-      const {
-        token,
-        userId,
-        periodoInicio,
-        periodoFin,
-        username: userNameFromResponse,
-      } = response;
+      // Llamada al backend para obtener el token, userId e isAdmin
+      console.log("Enviando datos de inicio de sesión:", { username, password });
+      
+      const response = await loginUser (username, password);
+      const { token, userId, isAdmin } = response;
+      console.log("Respuesta del servidor:", response);
 
       if (!token) {
         throw new Error("No se recibió un token válido.");
       }
 
       // Actualizamos el username y los demás datos en el localStorage
-      localStorage.setItem("userName", userNameFromResponse);
-
-      // Ya guardamos los otros datos en loginUser, no es necesario repetirlo
+      localStorage.setItem("userName", username);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("isAdmin", isAdmin); // Almacena si el usuario es administrador
 
       // Actualizar el estado de autenticación
       setAuthenticated(true);
-      setUserName(userNameFromResponse); // Actualizar el nombre de usuario en el estado
+      setUserName(username); // Actualizar el nombre de usuario en el estado
 
       // Redirigir al usuario a la página de movimientos
       navigate("/movimientos");
@@ -112,7 +108,7 @@ const Login = ({ setAuthenticated, setUserName }) => {
             disabled={loading}
             className="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-400"
           >
-            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+            {loading ? "Iniciando sesión..." : "In iciar sesión"}
           </button>
         </form>
       </div>
@@ -120,4 +116,4 @@ const Login = ({ setAuthenticated, setUserName }) => {
   );
 };
 
-export default Login;
+export default Login; 

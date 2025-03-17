@@ -27,7 +27,7 @@ const useAuth = (setAuthenticated) => {
         if (expirationTime < Date.now()) {
           // Si el token ya expiró
           setAuthenticated(false);
-          localStorage.removeItem("periodoInicio");
+          localStorage.removeItem("isAdmin");
           localStorage.removeItem("periodoFin");
           localStorage.removeItem("userId");
           localStorage.removeItem("token");
