@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createMovement, createOT, createOTConsumible } from "../services/api"; // Asegúrate de tener estas funciones en tu API
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -8,6 +8,7 @@ import { FaTrash } from "react-icons/fa";
 
 const Movimientos = () => {
   // Estados para las zonas
+
   const [zonas, setZonas] = useState([]);
   const [zonaId, setZonaId] = useState("");
   const [searchTerm, setSearchTerm] = useState(""); // Estado para almacenar el término de búsqueda
@@ -36,6 +37,63 @@ const Movimientos = () => {
   const filteredZonas = zonas.filter((zona) =>
     zona.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const [ots, setOts] = useState([]); // Estado para almacenar las OTs
+  const [filteredOts, setFilteredOts] = useState([]); // OTs filtradas
+  const [searchOt, setSearchOt] = useState(""); // Término de búsqueda para OTs
+  const [openOtDropdown, setOpenOtDropdown] = useState(false); // Controlar la visibilidad del desplegable
+  const [ubicacionId, setUbicacionId] = useState("");
+  const otInputRef = useRef(null);
+  // Función para manejar el cambio en el campo de búsqueda de OTs
+  const handleOtChange = (e) => {
+    setSearchOt(e.target.value);
+    setOpenOtDropdown(true); // Abrir el desplegable al escribir
+  };
+
+  // Filtrar OTs en función del término de búsqueda
+  useEffect(() => {
+    const filtered = ots.filter((ot) =>
+      ot.name.toLowerCase().includes(searchOt.toLowerCase())
+    );
+    setFilteredOts(filtered);
+  }, [searchOt, ots]);
+
+  // Función para seleccionar una OT
+  const selectOt = (ot) => {
+    setOtName(ot.name); // Establecer el nombre de la OT seleccionada
+    setSearchOt(ot.name); // Establecer el valor del campo de búsqueda
+    setOpenOtDropdown(false); // Cerrar el desplegable
+    setOtId(ot.OTmaximo); // Almacenar el ID de la OT seleccionada
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setOpenOtDropdown(false); // Cerrar el desplegable
+      setSearchOt(""); // Limpiar el campo de búsqueda
+    }
+  };
+  // Manejar clics fuera del campo de búsqueda
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const dropdown = document.getElementById("otDropdown"); // ID del desplegable
+      const input = document.getElementById("otName"); // ID del campo de búsqueda
+      if (
+        dropdown &&
+        !dropdown.contains(event.target) &&
+        input &&
+        !input.contains(event.target)
+      ) {
+        setOpenOtDropdown(false); // Cerrar el desplegable
+        setSearchOt(""); // Limpiar el campo de búsqueda
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   // Estados para la OT
   const [otName, setOtName] = useState("");
   const [otValue, setOtValue] = useState("");
@@ -43,7 +101,7 @@ const Movimientos = () => {
   const [descripcionEquipo, setDescripcionEquipo] = useState("");
   const [ubicacionSinId, setUbicacionSinId] = useState("");
   const [ubicaciones, setUbicaciones] = useState([]);
-  const [ubicacionId, setUbicacionId] = useState("");
+
   useEffect(() => {
     const fetchUbicacionesPorZona = async () => {
       if (!zonaId) return; // Si no hay zonaId, no hacer la solicitud
@@ -66,7 +124,10 @@ const Movimientos = () => {
   const [consumibles, setConsumibles] = useState([]); // Todos los consumibles disponibles
   const [filteredConsumibles, setFilteredConsumibles] = useState([]); // Consumibles filtrados
   const [searchConsumible, setSearchConsumible] = useState(""); // Término de búsqueda
-  const [selectedConsumibles, setSelectedConsumibles] = useState([]); // Consumibles seleccionados
+  const [otId, setOtId] = useState(null);
+  const [selectedConsumibles, setSelectedConsumibles] = useState([
+    { name: "", unidadMedida: "", cantidad: 1 }, // Inicializa con una fila
+  ]);
 
   // Cargar consumibles desde la API
   useEffect(() => {
@@ -86,6 +147,51 @@ const Movimientos = () => {
     fetchConsumibles();
   }, []);
 
+  // Cargar OTs desde la API
+  useEffect(() => {
+    const fetchOTs = async () => {
+      console.log("Fetching OTs...");
+
+      // Imprimir los valores de zonaId y ubicacionId
+      console.log("zonaId:", zonaId);
+      console.log("ubicacionId:", ubicacionId);
+
+      // Construir los parámetros de consulta
+      const params = new URLSearchParams({ temp: "CHIV1" }); // Siempre incluir temp
+
+      // Agregar zonaId si está definido
+      if (zonaId) {
+        params.append("zonaId", zonaId);
+      }
+
+      // Agregar ubicacionId si está definido
+      if (ubicacionId) {
+        params.append("ubicacionId", ubicacionId);
+      }
+
+      const url = `${
+        process.env.REACT_APP_API_URL
+      }ott/ots?${params.toString()}`;
+
+      // Imprimir la URL completa que se está construyendo
+      console.log("Request URL:", url); // Esto debería mostrar la URL construida
+
+      try {
+        const response = await axios.get(url); // Realizar la solicitud GET
+
+        // Imprimir la respuesta del backend
+        console.log("Response data:", response.data);
+
+        setOts(response.data); // Guardamos las OTs en el estado
+        setFilteredOts(response.data); // Inicialmente, mostramos todas las OTs
+      } catch (error) {
+        toast.error("Error al cargar las OTs.");
+        console.error("Error al cargar OTs:", error);
+      }
+    };
+
+    fetchOTs();
+  }, [zonaId, ubicacionId]); // Dependencias del useEffect
   // Filtrar consumibles en función del término de búsqueda
   useEffect(() => {
     const filtered = consumibles.filter((consumible) =>
@@ -166,8 +272,8 @@ const Movimientos = () => {
       errorMessages.push("al menos uno de Ubicación o Ubicación Sin");
     }
 
-    if (!otValue && !otName) {
-      errorMessages.push("al menos uno de Valor de OT o Nombre de OT");
+    if (!otValue && !otId) {
+      errorMessages.push("al menos un nombre OT o una OT no asignada");
     }
 
     if (!equipoId && !descripcionEquipo) {
@@ -199,8 +305,8 @@ const Movimientos = () => {
 
     try {
       const otData = {
-        name: otName,
-        OT: parseFloat(otValue),
+        ottId: otId, // Usar el ID de la OT seleccionada
+        OT: String(otValue),
         equipoId: parseInt(equipoId, 10),
         descripcionEquipo,
         zonaId: parseInt(zonaId, 10),
@@ -383,7 +489,7 @@ const Movimientos = () => {
         </div>
 
         <div className="grid grid-cols-6 gap-4">
-          <div className="col-span-3">
+          <div className="col-span-2">
             <label
               htmlFor="otName"
               className="block text-md font-medium text-gray-700"
@@ -393,21 +499,38 @@ const Movimientos = () => {
             <input
               id="otName"
               type="text"
-              value={otName}
-              onChange={(e) => setOtName(e.target.value)}
+              value={searchOt} // Usar el término de búsqueda
+              onChange={handleOtChange} // Manejar el cambio en el campo de búsqueda
               className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              onFocus={() => setOpenOtDropdown(true)} // Abrir el desplegable al enfocar
             />
+            {openOtDropdown && filteredOts.length > 0 && (
+              <ul
+                id="otDropdown" // ID del desplegable
+                className="absolute left-0 w-full bg-white border border-gray-300 rounded-lg z-10"
+              >
+                {filteredOts.map((ot) => (
+                  <li
+                    key={ot.OTmaximo}
+                    onClick={() => selectOt(ot)} // Seleccionar la OT al hacer clic
+                    className="cursor-pointer hover:bg-gray-100 p-2"
+                  >
+                    {ot.name} {/* Mostrar el nombre de la OT */}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="col-span-1">
+          <div className="col-span-2">
             <label
               htmlFor="otValue"
               className="block text-md font-medium text-gray-700"
             >
-              Valor de OT
+              OT no designada
             </label>
             <input
               id="otValue"
-              type="number"
+              type="text"
               value={otValue}
               onChange={(e) => setOtValue(e.target.value)}
               className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"

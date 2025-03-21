@@ -57,14 +57,9 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
             to="/movimientos"
             className="text-lg font-semibold transition-colors duration-300 hover:text-orange-500"
           >
-            Ingreso/Egreso
+            Registro
           </Link>
-          <Link
-            to="/reporte"
-            className="text-lg font-semibold transition-colors duration-300 hover:text-orange-500"
-          >
-            Reporte
-          </Link>
+
           <Link
             to="/general"
             className="text-lg font-semibold transition-colors duration-300 hover:text-orange-500"

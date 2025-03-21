@@ -3,6 +3,7 @@ const express = require("express");
 const {
   createOT,
   getAllOTs,
+  searchOts,
   getOTById,
   updateOT,
   deleteOT,
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/", createOT); // Crear OT
 router.get("/", getAllOTs); // Obtener todas las OTs
 router.get("/:id", getOTById); // Obtener OT por ID
+router.get('/search', searchOts);
 router.put("/:id", authMiddleware, updateOT); // Actualizar OT
 router.delete("/:id", authMiddleware, deleteOT); // Eliminar OT
 

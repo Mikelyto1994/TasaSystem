@@ -31,20 +31,22 @@ model Area {
 
 model Ots {
   id                Int      @id @default(autoincrement())
-  name              String   @unique
-  OT                Float
+  ottId             String?   // Cambiado de name a ottId para referirse a la OT
+  OT                String?   // Cambiado a string que contenga "OT sin "
   equipoId          Int?     // Puede ser nulo si no hay un equipo asociado
   descripcionEquipo String?   // Descripción del equipo si no hay un equipo asociado
   zonaId            Int
-  ubicacionId       Int
-  userId           Int       // Clave foránea que referencia a User
+  ubicacionId       Int?     // Puede ser nulo si no hay una ubicación asociada
+  userId            Int       // Clave foránea que referencia a User
   ubicacionSinId    String?   // Campo de texto para ubicaciones sin ID
-  user             User       @relation(fields: [userId], references: [id]) // Relación con User
-  equipo           Equipo?    @relation(fields: [equipoId], references: [id]) // Relación con Equipo
-  ubicacion        Ubicacion  @relation(fields: [ubicacionId], references: [id])
-  zona             Zona       @relation(fields: [zonaId], references: [id])
-  otConsumibles    OTConsumible[] // Relación uno a muchos con OTConsumible
+  user              User       @relation(fields: [userId], references: [id]) // Relación con User
+  equipo            Equipo?    @relation(fields: [equipoId], references: [id]) // Relación con Equipo
+  ubicacion         Ubicacion? @relation(fields: [ubicacionId], references: [id]) // Hacer que la relación sea opcional
+  zona              Zona       @relation(fields: [zonaId], references: [id])
+  otConsumibles     OTConsumible[] // Relación uno a muchos con OTConsumible
+  ot                OT?       @relation(fields: [ottId], references: [OTmaximo], name: "OTtoOTS") // Relación con OT
 }
+
 model OTConsumible {
   id              Int      @id @default(autoincrement())
   consumibleId    Int?     // Puede ser nulo si no hay un consumible asociado
@@ -61,6 +63,7 @@ model OTConsumible {
   comentarios      String?   // Comentarios sobre el pedido
   ot              Ots       @relation(fields: [otId], references: [id]) // Relación con Ots
   consumible      Consumible? @relation(fields: [consumibleId], references: [id]) // Relación con Consumible
+  fechaCreacion   DateTime  @default(now()) // Fecha de creación del OTConsumible
 }
 
 model Consumible {
@@ -71,6 +74,26 @@ model Consumible {
   nombreMaximo  String   // Cambiado a nombreMaximo para consistencia
   otConsumibles  OTConsumible[] 
 }
+
+model OT {
+  id          Int      @id @default(autoincrement())
+  name        String   // Nombre de la OT
+  Temp        String
+  OTmaximo    String   @unique // Marcar como único
+  estado      String   // Estado de la OT
+  ots         Ots[]    @relation("OTtoOTS") // Relación uno a muchos con Ots
+  
+  // Relaciones nuevas
+  zonaId      Int?
+  zona        Zona?     @relation(fields: [zonaId], references: [id])
+
+  ubicacionId Int?
+  ubicacion   Ubicacion? @relation(fields: [ubicacionId], references: [id])
+
+  equipoId    Int?
+  equipo      Equipo?   @relation(fields: [equipoId], references: [id])
+}
+
 model Zona {
   id            Int      @id @default(autoincrement())
   name          String
@@ -78,6 +101,7 @@ model Zona {
   ubicaciones   Ubicacion[] // Relación uno a muchos con Ubicacion
   equipos       Equipo[] // Relación uno a muchos con Equipo
   ots           Ots[]    // Relación uno a muchos con Ots
+    OTs   OT[]
 }
 
 model Ubicacion {
@@ -88,6 +112,7 @@ model Ubicacion {
   ots           Ots[]    // Relación uno a muchos con Ots
 zonaId        Int          // Clave foránea que referencia a Zona
   zona          Zona         @relation(fields: [zonaId], references: [id]) // Relación con Zona
+    OTs   OT[]
 }
 
 model Componente {
@@ -136,6 +161,7 @@ model Equipo {
   images        Image[]   @relation("EquipoImage") // Relación con Image
   componentes    Componente[] // Relación uno a muchos con Componente
   ots           Ots[]    // Relación uno a muchos con Ots
+  OTs   OT[]
 }
 
 model Image {
