@@ -12,6 +12,7 @@ const equipoRoutes = require("./routes/equipoRoutes");
 const componenteRoutes = require("./routes/componenteRoutes");
 const atributoRoutes = require("./routes/atributoRoutes");
 const otsRoutes = require("./routes/otsRoutes");
+const ottRoutes = require("./routes/OTTRoute");
 const otConsumibleRoutes = require("./routes/otConsumibleRoutes");
 // Configuración de la aplicación
 const app = express();
@@ -34,6 +35,7 @@ app.use("/equipos", equipoRoutes);
 app.use("/componentes", componenteRoutes);
 app.use("/atributos", atributoRoutes);
 app.use("/ots", otsRoutes);
+app.use("/ott", ottRoutes);
 app.use("/otc", otConsumibleRoutes);
 
 // Aplicar el middleware de Prisma

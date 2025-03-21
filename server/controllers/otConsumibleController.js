@@ -1,13 +1,32 @@
 // controllers/otConsumibleController.js
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 // Crear un nuevo OTConsumible
 const createOTConsumible = async (req, res) => {
-  const { consumibleId, nombreConsumible, unidadMedida, cantidad, otId, userId, imageUrl, estado, reservaSap, comentarios } = req.body;
+  const {
+    consumibleId,
+    nombreConsumible,
+    unidadMedida,
+    cantidad,
+    otId,
+    userId,
+    imageUrl,
+    estado,
+    reservaSap,
+    comentarios,
+  } = req.body;
+
+  // Definir el offset de Lima (UTC-5)
+  const limaOffset = -5;
+  const nowUtc = new Date();
+  const limaDate = new Date(nowUtc.getTime() + limaOffset * 60 * 60 * 1000);
 
   try {
     let otConsumible;
+
+    // Convertir cantidad a Float
+    const cantidadFloat = parseFloat(cantidad);
 
     if (consumibleId) {
       // Si hay un consumibleId, se crea el OTConsumible asociado
@@ -15,12 +34,13 @@ const createOTConsumible = async (req, res) => {
         data: {
           consumibleId,
           otId,
-          userId,
+          userId: parseInt(userId, 10), // Asegúrate de que userId sea un número
           imageUrl,
           estado,
           reservaSap,
           comentarios,
-          cantidad,
+          cantidad: cantidadFloat, // Usar cantidad como Float
+          fechaCreacion: limaDate, // Ajustar la fecha de creación
         },
       });
     } else {
@@ -29,7 +49,7 @@ const createOTConsumible = async (req, res) => {
         data: {
           name: nombreConsumible,
           unidadMedida,
-          codMaximo: '', // Puedes establecer un valor predeterminado o dejarlo vacío
+          codMaximo: "", // Puedes establecer un valor predeterminado o dejarlo vacío
           nombreMaximo: nombreConsumible, // O cualquier otro valor que desees
         },
       });
@@ -39,12 +59,13 @@ const createOTConsumible = async (req, res) => {
         data: {
           consumibleId: nuevoConsumible.id, // Asocia el nuevo consumible
           otId,
-          userId,
+          userId: parseInt(userId, 10), // Asegúrate de que userId sea un número
           imageUrl,
           estado,
           reservaSap,
           comentarios,
-          cantidad,
+          cantidad: cantidadFloat, // Usar cantidad como Float
+          fechaCreacion: limaDate, // Ajustar la fecha de creación
         },
       });
     }
@@ -52,7 +73,21 @@ const createOTConsumible = async (req, res) => {
     res.status(201).json(otConsumible);
   } catch (error) {
     console.error("Error al crear OTConsumible:", error);
-    res.status(500).json({ message: "Error al crear OTConsumible" });
+
+    // Manejo de errores más detallado
+    if (error.code === "P2002") {
+      return res.status(409).json({ message: "El consumible ya existe." });
+    }
+
+    if (error.code === "P2025") {
+      return res
+        .status(404)
+        .json({ message: "No se encontró el registro relacionado." });
+    }
+
+    res
+      .status(500)
+      .json({ message: "Error al crear OTConsumible", error: error.message });
   }
 };
 
@@ -101,7 +136,18 @@ const getOTConsumibleById = async (req, res) => {
 // Actualizar un OTConsumible
 const updateOTConsumible = async (req, res) => {
   const { id } = req.params;
-  const { consumibleId, nombreConsumible, unidadMedida, cantidad, otId, userId, imageUrl, estado, reservaSap, comentarios } = req.body;
+  const {
+    consumibleId,
+    nombreConsumible,
+    unidadMedida,
+    cantidad,
+    otId,
+    userId,
+    imageUrl,
+    estado,
+    reservaSap,
+    comentarios,
+  } = req.body;
 
   try {
     const otConsumible = await prisma.oTConsumible.update({
