@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Ots" ALTER COLUMN "OT" DROP NOT NULL;

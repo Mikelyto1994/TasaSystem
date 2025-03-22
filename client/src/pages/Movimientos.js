@@ -4,7 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash,FaPlus,FaUndo   } from "react-icons/fa";
 
 const Movimientos = () => {
   // Estados para las zonas
@@ -126,8 +126,18 @@ const Movimientos = () => {
   const [searchConsumible, setSearchConsumible] = useState(""); // Término de búsqueda
   const [otId, setOtId] = useState(null);
   const [selectedConsumibles, setSelectedConsumibles] = useState([
-    { name: "", unidadMedida: "", cantidad: 1 }, // Inicializa con una fila
+    { name: "", unidadMedida: "", cantidad: 1, isEditing: false }, // Inicializa con una fila
   ]);
+  const enableEditConsumible = (index) => {
+    const newConsumibles = [...selectedConsumibles];
+    newConsumibles[index].isEditing = true; // Cambia el estado de la fila a editable
+    setSelectedConsumibles(newConsumibles);
+  };
+  const resetConsumible = (index) => {
+    const newConsumibles = [...selectedConsumibles];
+    newConsumibles[index].isEditing = false; // Cambia el estado de la fila a no editable
+    setSelectedConsumibles(newConsumibles);
+  };
 
   // Cargar consumibles desde la API
   useEffect(() => {
@@ -193,21 +203,27 @@ const Movimientos = () => {
     fetchOTs();
   }, [zonaId, ubicacionId]); // Dependencias del useEffect
   // Filtrar consumibles en función del término de búsqueda
-  useEffect(() => {
-    const filtered = consumibles.filter((consumible) =>
-      consumible.name.toLowerCase().includes(searchConsumible.toLowerCase())
-    );
-    setFilteredConsumibles(filtered);
-  }, [searchConsumible, consumibles]);
+  // Filtrar consumibles en función del término de búsqueda
+useEffect(() => {
+  const filtered = consumibles.filter((consumible) =>
+    consumible.name.toLowerCase().includes(searchConsumible.toLowerCase())
+  );
+  setFilteredConsumibles(filtered);
+}, [searchConsumible, consumibles]);
 
-  // Función para agregar un consumible seleccionado
-  const addConsumible = (consumible) => {
-    setSelectedConsumibles([
-      ...selectedConsumibles,
-      { ...consumible, cantidad: 1 },
-    ]); // Agregar el consumible seleccionado con cantidad inicial de 1
-    setSearchConsumible(""); // Limpiar el campo de búsqueda
-  };
+// Función para agregar un consumible seleccionado
+const addConsumible = (consumible) => {
+  setSelectedConsumibles([
+    ...selectedConsumibles,
+    { ...consumible, cantidad: 1 },
+  ]); // Agregar el consumible seleccionado con cantidad inicial de 1
+  setSearchConsumible(""); // Limpiar el campo de búsqueda
+};
+
+// Filtrar consumibles disponibles para el desplegable
+const availableConsumibles = filteredConsumibles.filter(
+  (c) => !selectedConsumibles.some((selected) => selected.id === c.id)
+);
 
   // Función para manejar el cambio en la cantidad de un consumible
   const handleConsumibleChange = (index, value) => {
@@ -374,34 +390,38 @@ const Movimientos = () => {
   const handleSubmitConsumible = async (e) => {
     e.preventDefault();
     if (isSubmittingConsumible) return;
-
+  
     setIsSubmittingConsumible(true);
-
+  
     // Validar que al menos un consumible tenga datos
     if (
-      consumibles.length === 0 ||
-      consumibles.some((c) => !c.nombre || !c.unidadMedida || !c.cantidad)
+      selectedConsumibles.length === 0 ||
+      selectedConsumibles.some((c) => !c.name || !c.unidadMedida || !c.cantidad)
     ) {
       toast.error("Por favor, complete todos los campos de los consumibles.");
       setIsSubmittingConsumible(false);
       return;
     }
-
+  
     try {
-      for (const consumible of consumibles) {
-        const consumibleData = {
-          nombreConsumible: consumible.nombre,
+      for (const consumible of selectedConsumibles) {
+        const otConsumibleData = {
+          consumibleId: consumible.id || null, // Asegúrate de que el consumible tenga un ID
+          nombreConsumible: consumible.name,
           unidadMedida: consumible.unidadMedida,
-          cantidad: parseFloat(consumible.cantidad),
+          cantidad: parseFloat(consumible.cantidad), // Asegúrate de que sea un número
           otId, // Asegúrate de tener el ID de la OT
-          userId: localStorage.getItem("userId"),
+          userId: localStorage.getItem("userId"), // Asegúrate de que sea un número
         };
-
-        await createOTConsumible(consumibleData);
+  
+        console.log("Datos a enviar:", otConsumibleData); // Para depuración
+  
+        const response = await createOTConsumible(otConsumibleData);
+        console.log("Respuesta del servidor:", response); // Para depuración
       }
       toast.success("Consumibles registrados con éxito.");
       // Limpiar campos de consumible
-      setConsumibles([{ nombre: "", unidadMedida: "", cantidad: "" }]);
+      setSelectedConsumibles([{ name: "", unidadMedida: "", cantidad: 1 }]); // Reiniciar el estado
     } catch (err) {
       toast.error("Error al registrar los consumibles.");
       console.error("Error al registrar consumibles:", err);
@@ -409,6 +429,41 @@ const Movimientos = () => {
       setIsSubmittingConsumible(false);
     }
   };
+
+  const [newConsumible, setNewConsumible] = useState({
+    name: "",
+    unidadMedida: "",
+    cantidad: 1,
+  });
+  const [isAddingNewConsumible, setIsAddingNewConsumible] = useState(false); // Estado para controlar la visibilidad del formulario de nuevo consumible
+
+  // Función para manejar el cambio en el nuevo consumible
+  const handleNewConsumibleChange = (e) => {
+    const { name, value } = e.target;
+    setNewConsumible((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Función para agregar el nuevo consumible a la lista
+  const addNewConsumible = () => {
+    if (!newConsumible.name || !newConsumible.unidadMedida || newConsumible.cantidad <= 0) {
+      toast.error("Por favor, complete todos los campos del nuevo consumible.");
+      return;
+    }
+
+    setSelectedConsumibles((prev) => [
+      ...prev,
+      { ...newConsumible, id: Date.now() }, // Usar un ID único temporal
+    ]);
+    setNewConsumible({ name: "", unidadMedida: "", cantidad: 1 }); // Reiniciar el formulario
+    setIsAddingNewConsumible(false); // Cerrar el formulario
+  };
+  const handleNameChange = (index, value) => {
+    const newConsumibles = [...selectedConsumibles];
+    newConsumibles[index].name = value; // Actualiza el nombre del consumible
+    setSelectedConsumibles(newConsumibles);
+    setOpenDropdownIndex(index); // Abre el desplegable para este consumible
+  };
+  const [isReset, setIsReset] = useState(false);
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg mt-10 mb-10">
@@ -590,109 +645,144 @@ const Movimientos = () => {
       <h2 className="text-3xl font-semibold text-center text-gray-700 mb-8 mt-10">
         Adicionar Consumibles
       </h2>
-      <form onSubmit={handleSubmitConsumible} className="space-y-6">
-        <table className="min-w-full border-collapse border border-gray-300">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 p-2">#</th>
-              <th className="border border-gray-300 p-2">
-                Nombre del Consumible
-              </th>
-              <th className="border border-gray-300 p-2">UM</th>
-              <th className="border border-gray-300 p-2">Cant.</th>
-              <th className="border border-gray-300 p-2">Dlt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedConsumibles.map((consumible, index) => (
-              <tr key={index}>
-                <td className="border border-gray-300 p-2">{index + 1}</td>
-                <td className="border border-gray-300 p-2">
-                  <input
-                    type="text"
-                    placeholder="Buscar consumible..."
-                    value={consumible.name} // Mantener el nombre seleccionado
-                    onChange={(e) => {
-                      const newConsumibles = [...selectedConsumibles];
-                      newConsumibles[index].name = e.target.value; // Actualiza el nombre del consumible
-                      setSelectedConsumibles(newConsumibles);
-                      setOpenDropdownIndex(index); // Abre el desplegable para este consumible
-                    }}
-                    className="w-full p-2 border border-gray-300 rounded"
-                  />
-                  <ul
-                    className={`absolute left-0 w-full bg-white border border-gray-300 rounded-lg z-10 ${
-                      openDropdownIndex === index ? "" : "hidden" // Solo mostrar si el índice coincide
-                    }`}
-                  >
-                    {filteredConsumibles
-                      .filter(
-                        (c) =>
-                          consumible.name &&
-                          c.name
-                            .toLowerCase()
-                            .includes(consumible.name.toLowerCase())
-                      ) // Verifica que consumible.name esté definido
-                      .filter(
-                        (c) =>
-                          !selectedConsumibles.some((sc) => sc.name === c.name)
-                      ) // Filtra consumibles ya seleccionados
-                      .map((filteredConsumible) => (
-                        <li
-                          key={filteredConsumible.id}
-                          onClick={() => {
-                            const newConsumibles = [...selectedConsumibles];
-                            newConsumibles[index] = {
-                              ...filteredConsumible,
-                              cantidad: 1, // Establecer cantidad inicial
-                            };
-                            setSelectedConsumibles(newConsumibles);
-                            setOpenDropdownIndex(null); // Cierra el desplegable al seleccionar
-                            console.log(
-                              "Consumible seleccionado:",
-                              filteredConsumible
-                            ); // Para depuración
-                          }}
-                          className="cursor-pointer hover:bg-gray-100 p-2"
-                        >
-                          {filteredConsumible.name}
-                        </li>
-                      ))}
-                  </ul>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  {consumible.unidadMedida}{" "}
-                  {/* Mostrar la unidad de medida como texto */}
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <input
-                    type="number"
-                    min="1" // Asegura que la cantidad sea al menos 1
-                    value={consumible.cantidad} // Mantener la cantidad
-                    onChange={
-                      (e) => handleConsumibleChange(index, e.target.value) // Manejar el cambio en la cantidad
-                    }
-                    className="w-full p-2 border border-gray-300 rounded"
-                    required
-                  />
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <button type="button" onClick={() => removeConsumible(index)}>
-                    <FaTrash className="text-red-500 hover:text-red-700" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <button
-          type="button"
-          onClick={addConsumible}
-          className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-        >
-          Añadir Consumible
-        </button>
-      </form>
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+  <table className="min-w-full border-collapse border border-gray-300">
+    <thead>
+      <tr>
+        <th className="border border-gray-300 p-2">#</th>
+        <th className="border border-gray-300 p-2">Nombre del Consumible</th>
+        <th className="border border-gray-300 p-2">UM</th>
+        <th className="border border-gray-300 p-2">Cant.</th>
+        <th className="border border-gray-300 p-2">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {selectedConsumibles.map((consumible, index) => (
+        <tr key={index}>
+          <td className="border border-gray-300 p-2">{index + 1}</td>
+          <td className="border border-gray-300 p-2">
+            {consumible.isEditing ? (
+              <input
+                type="text"
+                placeholder="Coloca tu consumible"
+                value={consumible.name}
+                onChange={(e) => {
+                  const newConsumibles = [...selectedConsumibles];
+                  newConsumibles[index].name = e.target.value;
+                  setSelectedConsumibles(newConsumibles);
+                }}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            ) : (
+              <input
+                type="text"
+                placeholder="Buscar consumible"
+                value={consumible.name}
+                onChange={(e) => {
+                  const newConsumibles = [...selectedConsumibles];
+                  newConsumibles[index].name = e.target.value;
+                  setSelectedConsumibles(newConsumibles);
+                  setOpenDropdownIndex(index);
+                }}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            )}
+            {consumible.isEditing ? (
+              <></>
+            ) : (
+              <ul
+  className={`absolute left-0 w-full bg-white border border-gray-300 rounded-lg z-10 ${
+    openDropdownIndex === index ? "" : "hidden"
+  }`}
+>
+  {availableConsumibles
+    .filter((c) => {
+      return (
+        consumible.name &&
+        c.name &&
+        c.name.toLowerCase().includes(consumible.name.toLowerCase())
+      );
+    })
+    .map((filteredConsumible) => (
+      <li
+        key={filteredConsumible.id}
+        onClick={() => {
+          const newConsumibles = [...selectedConsumibles];
+          newConsumibles[index] = {
+            ...filteredConsumible,
+            cantidad: 1,
+          };
+          setSelectedConsumibles(newConsumibles);
+          setOpenDropdownIndex(null);
+        }}
+        className="cursor-pointer hover:bg-gray-100 p-2"
+      >
+        {filteredConsumible.name}
+      </li>
+    ))}
+</ul>)}
+          </td>
+          <td className="border border-gray-300 p-2">
+            {consumible.isEditing ? (
+              <input
+                type="text"
+                value={consumible.unidadMedida}
+                onChange={(e) => {
+                  const newConsumibles = [...selectedConsumibles];
+                  newConsumibles[index].unidadMedida = e.target.value;
+                  setSelectedConsumibles(newConsumibles);
+                }}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            ) : (
+              <span>{consumible.unidadMedida}</span>
+            )}
+          </td>
+          <td className="border border-gray-300 p-2">
+            <input
+              type="number"
+              min="1"
+              value={consumible.cantidad}
+              onChange={(e) => handleConsumibleChange(index, e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            />
+          </td>
+          <td className="border border-gray-300 p-2 flex space-x-2">
+            <button type="button" onClick={() => removeConsumible(index)}>
+              <FaTrash className="text-red-500 hover:text-red-700" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                consumible.isEditing = true;
+                setSelectedConsumibles([...selectedConsumibles]);
+              }}
+            >
+              <FaPlus className="text-green-500 hover:text-green-700" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                consumible.isEditing = false;
+                setSelectedConsumibles([...selectedConsumibles]);
+              }}
+            >
+              <FaUndo className="text-blue-500 hover:text-blue-700" />
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <button
+    type="button"
+    onClick={addConsumible}
+    className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+  >
+    Añadir Consumible
+  </button>
+</form>
       <ToastContainer />
     </div>
   );

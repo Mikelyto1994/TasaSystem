@@ -7,7 +7,7 @@ const Home = () => {
 
   // Función que maneja el click en el botón
   const handleLoginRedirect = () => {
-    navigate("/login"); // Redirige a la ruta '/login'
+    navigate("/movimientos"); // Redirige a la ruta '/login'
   };
 
   return (

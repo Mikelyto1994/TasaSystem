@@ -51,16 +51,20 @@ const getAllOTTs = async (req, res) => {
     }
 
     // Obtener las OTs con los filtros aplicados
-    const ots = await prisma.oT.findMany({
+    const ots = await prisma.oTbasico.findMany({
       where: filters, // Aplicar los filtros
+      include: {
+        Equipo: true, // Incluir información del equipo relacionado
+        Ubicacion: true, // Incluir información de la ubicación relacionada
+        Zona: true, // Incluir información de la zona relacionada
+        Ots: true, // Incluir información de las OTs relacionadas
+      },
     });
 
     res.status(200).json(ots);
   } catch (error) {
     console.error("Error al obtener OTs:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener OTs", error: error.message });
+    res.status(500).json({ message: "Error al obtener OTs", error: error.message });
   }
 };
 

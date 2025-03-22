@@ -46,7 +46,7 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
             <img
               src="/assets/logo.png" // Asegúrate de que el logo esté en esta ruta
               alt="Logo"
-              className="w-20 h-20 cursor-pointer"
+              className="w-40 h-20 cursor-pointer"
             />
           </Link>
         </div>

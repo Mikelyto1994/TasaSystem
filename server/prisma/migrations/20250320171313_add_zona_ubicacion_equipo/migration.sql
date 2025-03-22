@@ -1,8 +1,0 @@
--- DropForeignKey
-ALTER TABLE "OT" DROP CONSTRAINT "OT_zonaId_fkey";
-
--- AlterTable
-ALTER TABLE "OT" ALTER COLUMN "zonaId" DROP NOT NULL;
-
--- AddForeignKey
-ALTER TABLE "OT" ADD CONSTRAINT "OT_zonaId_fkey" FOREIGN KEY ("zonaId") REFERENCES "Zona"("id") ON DELETE SET NULL ON UPDATE CASCADE;

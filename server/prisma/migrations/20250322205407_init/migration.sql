@@ -1,55 +1,36 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "areaId" INTEGER NOT NULL,
+    "password" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "isAdmin" BOOLEAN NOT NULL DEFAULT false,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
 
-  - You are about to drop the column `createdAt` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `periodoFin` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `periodoInicio` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedAt` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the `Categoria` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Movimiento` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `_MovementImages` table. If the table is not empty, all the data it contains will be lost.
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
-*/
--- DropForeignKey
-ALTER TABLE "Movimiento" DROP CONSTRAINT "Movimiento_categoriaId_fkey";
+-- CreateTable
+CREATE TABLE "Area" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
 
--- DropForeignKey
-ALTER TABLE "Movimiento" DROP CONSTRAINT "Movimiento_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "_MovementImages" DROP CONSTRAINT "_MovementImages_A_fkey";
-
--- DropForeignKey
-ALTER TABLE "_MovementImages" DROP CONSTRAINT "_MovementImages_B_fkey";
-
--- AlterTable
-ALTER TABLE "User" DROP COLUMN "createdAt",
-DROP COLUMN "periodoFin",
-DROP COLUMN "periodoInicio",
-DROP COLUMN "updatedAt";
-
--- DropTable
-DROP TABLE "Categoria";
-
--- DropTable
-DROP TABLE "Movimiento";
-
--- DropTable
-DROP TABLE "_MovementImages";
-
--- DropEnum
-DROP TYPE "TipoMovimiento";
+    CONSTRAINT "Area_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Ots" (
     "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-    "OT" DOUBLE PRECISION NOT NULL,
+    "OT" TEXT,
     "equipoId" INTEGER,
     "descripcionEquipo" TEXT,
     "zonaId" INTEGER NOT NULL,
-    "ubicacionId" INTEGER NOT NULL,
+    "ubicacionId" INTEGER,
     "userId" INTEGER NOT NULL,
+    "ubicacionSinId" TEXT,
+    "ottId" TEXT,
 
     CONSTRAINT "Ots_pkey" PRIMARY KEY ("id")
 );
@@ -64,6 +45,10 @@ CREATE TABLE "OTConsumible" (
     "otId" INTEGER NOT NULL,
     "userId" INTEGER NOT NULL,
     "imageUrl" TEXT,
+    "comentarios" TEXT,
+    "estado" TEXT,
+    "reservaSap" TEXT,
+    "fechaCreacion" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OTConsumible_pkey" PRIMARY KEY ("id")
 );
@@ -93,6 +78,7 @@ CREATE TABLE "Ubicacion" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "nombreMaximo" TEXT NOT NULL,
+    "zonaId" INTEGER NOT NULL,
 
     CONSTRAINT "Ubicacion_pkey" PRIMARY KEY ("id")
 );
@@ -138,8 +124,33 @@ CREATE TABLE "Equipo" (
     "zonaId" INTEGER NOT NULL,
     "ubicacionId" INTEGER NOT NULL,
     "imageUrl" TEXT,
+    "ubicacionSinId" TEXT,
 
     CONSTRAINT "Equipo_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Image" (
+    "id" SERIAL NOT NULL,
+    "url" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Image_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OTbasico" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "Temp" TEXT NOT NULL,
+    "OTmaximo" TEXT NOT NULL,
+    "estado" TEXT NOT NULL,
+    "zonaId" INTEGER,
+    "ubicacionId" INTEGER,
+    "equipoId" INTEGER,
+
+    CONSTRAINT "OTbasico_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -167,7 +178,13 @@ CREATE TABLE "_RepuestoImage" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Ots_name_key" ON "Ots"("name");
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Area_name_key" ON "Area"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OTbasico_OTmaximo_key" ON "OTbasico"("OTmaximo");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_ComponenteImage_AB_unique" ON "_ComponenteImage"("A", "B");
@@ -194,19 +211,34 @@ CREATE UNIQUE INDEX "_RepuestoImage_AB_unique" ON "_RepuestoImage"("A", "B");
 CREATE INDEX "_RepuestoImage_B_index" ON "_RepuestoImage"("B");
 
 -- AddForeignKey
-ALTER TABLE "Ots" ADD CONSTRAINT "Ots_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "User" ADD CONSTRAINT "User_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "Area"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Ots" ADD CONSTRAINT "Ots_equipoId_fkey" FOREIGN KEY ("equipoId") REFERENCES "Equipo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Ots" ADD CONSTRAINT "Ots_ubicacionId_fkey" FOREIGN KEY ("ubicacionId") REFERENCES "Ubicacion"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Ots" ADD CONSTRAINT "Ots_ottId_fkey" FOREIGN KEY ("ottId") REFERENCES "OTbasico"("OTmaximo") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ots" ADD CONSTRAINT "Ots_ubicacionId_fkey" FOREIGN KEY ("ubicacionId") REFERENCES "Ubicacion"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ots" ADD CONSTRAINT "Ots_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Ots" ADD CONSTRAINT "Ots_zonaId_fkey" FOREIGN KEY ("zonaId") REFERENCES "Zona"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "OTConsumible" ADD CONSTRAINT "OTConsumible_consumibleId_fkey" FOREIGN KEY ("consumibleId") REFERENCES "Consumible"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OTConsumible" ADD CONSTRAINT "OTConsumible_otId_fkey" FOREIGN KEY ("otId") REFERENCES "Ots"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "OTConsumible" ADD CONSTRAINT "OTConsumible_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ubicacion" ADD CONSTRAINT "Ubicacion_zonaId_fkey" FOREIGN KEY ("zonaId") REFERENCES "Zona"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Componente" ADD CONSTRAINT "Componente_equipoId_fkey" FOREIGN KEY ("equipoId") REFERENCES "Equipo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -224,10 +256,19 @@ ALTER TABLE "Repuesto" ADD CONSTRAINT "Repuesto_componenteId_fkey" FOREIGN KEY (
 ALTER TABLE "Repuesto" ADD CONSTRAINT "Repuesto_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Equipo" ADD CONSTRAINT "Equipo_ubicacionId_fkey" FOREIGN KEY ("ubicacionId") REFERENCES "Ubicacion"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Equipo" ADD CONSTRAINT "Equipo_zonaId_fkey" FOREIGN KEY ("zonaId") REFERENCES "Zona"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Equipo" ADD CONSTRAINT "Equipo_ubicacionId_fkey" FOREIGN KEY ("ubicacionId") REFERENCES "Ubicacion"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "OTbasico" ADD CONSTRAINT "OTbasico_equipoId_fkey" FOREIGN KEY ("equipoId") REFERENCES "Equipo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OTbasico" ADD CONSTRAINT "OTbasico_ubicacionId_fkey" FOREIGN KEY ("ubicacionId") REFERENCES "Ubicacion"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OTbasico" ADD CONSTRAINT "OTbasico_zonaId_fkey" FOREIGN KEY ("zonaId") REFERENCES "Zona"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_ComponenteImage" ADD CONSTRAINT "_ComponenteImage_A_fkey" FOREIGN KEY ("A") REFERENCES "Componente"("id") ON DELETE CASCADE ON UPDATE CASCADE;

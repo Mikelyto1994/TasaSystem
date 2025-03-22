@@ -14,9 +14,10 @@ const router = express.Router();
 
 // Rutas para el CRUD de OTs
 router.post("/", createOT); // Crear OT
+router.get("/search", searchOts);
 router.get("/", getAllOTs); // Obtener todas las OTs
 router.get("/:id", getOTById); // Obtener OT por ID
-router.get('/search', searchOts);
+
 router.put("/:id", authMiddleware, updateOT); // Actualizar OT
 router.delete("/:id", authMiddleware, deleteOT); // Eliminar OT
 

@@ -1,176 +1,172 @@
-datasource db {
-  provider = "postgresql"  // Cambia esto si usas otro tipo de base de datos
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id            Int      @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   firstName     String
   lastName      String
   areaId        Int
-  username      String   @unique
-  password      String   // Asegúrate de encriptar la contraseña en el backend
-  isAdmin       Boolean  @default(false)  // Campo para identificar si el usuario es administrador
-  isDeleted     Boolean  @default(false)  // Campo para marcar si el usuario está deshabilitado
-  area          Area     @relation(fields: [areaId], references: [id])
-  ots           Ots[]    // Relación con Ots
-  otConsumibles OTConsumible[] // Relación con OTConsumible
-  componentes    Componente[] // Relación con Componente
-  repuestos      Repuesto[] // Relación con Repuesto
+  password      String
+  username      String         @unique
+  isAdmin       Boolean        @default(false)
+  isDeleted     Boolean        @default(false)
+  componentes   Componente[]
+  otConsumibles OTConsumible[]
+  ots           Ots[]
+  repuestos     Repuesto[]
+  area          Area           @relation(fields: [areaId], references: [id])
 }
 
 model Area {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  users       User[]
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
 }
 
 model Ots {
-  id                Int      @id @default(autoincrement())
-  ottId             String?   // Cambiado de name a ottId para referirse a la OT
-  OT                String?   // Cambiado a string que contenga "OT sin "
-  equipoId          Int?     // Puede ser nulo si no hay un equipo asociado
-  descripcionEquipo String?   // Descripción del equipo si no hay un equipo asociado
+  id                Int            @id @default(autoincrement())
+  OT                String?
+  equipoId          Int?
+  descripcionEquipo String?
   zonaId            Int
-  ubicacionId       Int?     // Puede ser nulo si no hay una ubicación asociada
-  userId            Int       // Clave foránea que referencia a User
-  ubicacionSinId    String?   // Campo de texto para ubicaciones sin ID
-  user              User       @relation(fields: [userId], references: [id]) // Relación con User
-  equipo            Equipo?    @relation(fields: [equipoId], references: [id]) // Relación con Equipo
-  ubicacion         Ubicacion? @relation(fields: [ubicacionId], references: [id]) // Hacer que la relación sea opcional
-  zona              Zona       @relation(fields: [zonaId], references: [id])
-  otConsumibles     OTConsumible[] // Relación uno a muchos con OTConsumible
-  ot                OT?       @relation(fields: [ottId], references: [OTmaximo], name: "OTtoOTS") // Relación con OT
+  ubicacionId       Int?
+  userId            Int
+  ubicacionSinId    String?
+  ottId             String?
+  otConsumibles     OTConsumible[]
+  equipo            Equipo?        @relation(fields: [equipoId], references: [id])
+  OTbasico          OTbasico?      @relation(fields: [ottId], references: [OTmaximo])
+  ubicacion         Ubicacion?     @relation(fields: [ubicacionId], references: [id])
+  user              User           @relation(fields: [userId], references: [id])
+  zona              Zona           @relation(fields: [zonaId], references: [id])
 }
 
 model OTConsumible {
-  id              Int      @id @default(autoincrement())
-  consumibleId    Int?     // Puede ser nulo si no hay un consumible asociado
-  nombreConsumible String?   // Nombre del consumible ingresado manualmente
-  unidadMedida    String?   // Unidad de medida del consumible ingresado manualmente
-  cantidad        Float?    // Cantidad del consumible ingresado manualmente
-  otId            Int      // Clave foránea que referencia a Ots
-  userId          Int       // Clave foránea que referencia a User
-  imageUrl        String?    // URL de la imagen (si se sube una)
-  images          Image[]    @relation("ConsumibleImage") // Relación con Image
-  user            User       @relation(fields: [userId], references: [id]) // Relación con User
-  estado          String?    // Estado del pedido (ej. "Solicitado", "No llega todavía")
-  reservaSap      String?    // Número de reserva SAP
-  comentarios      String?   // Comentarios sobre el pedido
-  ot              Ots       @relation(fields: [otId], references: [id]) // Relación con Ots
-  consumible      Consumible? @relation(fields: [consumibleId], references: [id]) // Relación con Consumible
-  fechaCreacion   DateTime  @default(now()) // Fecha de creación del OTConsumible
+  id               Int         @id @default(autoincrement())
+  consumibleId     Int?
+  nombreConsumible String?
+  unidadMedida     String?
+  cantidad         Float?
+  otId             Int
+  userId           Int
+  imageUrl         String?
+  comentarios      String?
+  estado           String?
+  reservaSap       String?
+  fechaCreacion    DateTime    @default(now())
+  consumible       Consumible? @relation(fields: [consumibleId], references: [id])
+  ot               Ots         @relation(fields: [otId], references: [id])
+  user             User        @relation(fields: [userId], references: [id])
+  images           Image[]     @relation("ConsumibleImage")
 }
 
 model Consumible {
-  id            Int      @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   name          String
   unidadMedida  String
   codMaximo     String
-  nombreMaximo  String   // Cambiado a nombreMaximo para consistencia
-  otConsumibles  OTConsumible[] 
-}
-
-model OT {
-  id          Int      @id @default(autoincrement())
-  name        String   // Nombre de la OT
-  Temp        String
-  OTmaximo    String   @unique // Marcar como único
-  estado      String   // Estado de la OT
-  ots         Ots[]    @relation("OTtoOTS") // Relación uno a muchos con Ots
-  
-  // Relaciones nuevas
-  zonaId      Int?
-  zona        Zona?     @relation(fields: [zonaId], references: [id])
-
-  ubicacionId Int?
-  ubicacion   Ubicacion? @relation(fields: [ubicacionId], references: [id])
-
-  equipoId    Int?
-  equipo      Equipo?   @relation(fields: [equipoId], references: [id])
+  nombreMaximo  String
+  otConsumibles OTConsumible[]
 }
 
 model Zona {
-  id            Int      @id @default(autoincrement())
-  name          String
-  nombreMaximo  String   // Nuevo atributo
-  ubicaciones   Ubicacion[] // Relación uno a muchos con Ubicacion
-  equipos       Equipo[] // Relación uno a muchos con Equipo
-  ots           Ots[]    // Relación uno a muchos con Ots
-    OTs   OT[]
+  id           Int         @id @default(autoincrement())
+  name         String
+  nombreMaximo String
+  equipos      Equipo[]
+  OTbasico     OTbasico[]
+  ots          Ots[]
+  ubicaciones  Ubicacion[]
 }
 
 model Ubicacion {
-  id            Int      @id @default(autoincrement())
-  name          String
-  nombreMaximo  String   // Nuevo atributo
-  equipos       Equipo[] // Relación uno a muchos con Equipo
-  ots           Ots[]    // Relación uno a muchos con Ots
-zonaId        Int          // Clave foránea que referencia a Zona
-  zona          Zona         @relation(fields: [zonaId], references: [id]) // Relación con Zona
-    OTs   OT[]
+  id           Int        @id @default(autoincrement())
+  name         String
+  nombreMaximo String
+  zonaId       Int
+  equipos      Equipo[]
+  OTbasico     OTbasico[]
+  ots          Ots[]
+  zona         Zona       @relation(fields: [zonaId], references: [id])
 }
 
 model Componente {
-  id            Int       @id @default(autoincrement())
-  equipoId      Int       // Clave foránea que referencia a Equipo
-  parteEquipo   String     // Parte del equipo a la que pertenece
-  imageUrl      String?    // URL de la imagen (si se sube una)
-  images        Image[]   @relation("ComponenteImage") // Relación con Image
-  userId        Int       // Clave foránea que referencia a User
-  equipo        Equipo     @relation(fields: [equipoId], references: [id]) // Relación con Equipo
-  atributos     Atributo[] // Relación uno a muchos con Atributo
-  user          User       @relation(fields: [userId], references: [id]) // Relación con User
-  repuestos     Repuesto[] // Relación uno a muchos con Repuesto
+  id          Int        @id @default(autoincrement())
+  equipoId    Int
+  parteEquipo String
+  imageUrl    String?
+  userId      Int
+  atributos   Atributo[]
+  equipo      Equipo     @relation(fields: [equipoId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+  repuestos   Repuesto[]
+  images      Image[]    @relation("ComponenteImage")
 }
 
 model Atributo {
-  id            Int       @id @default(autoincrement())
-  componenteId  Int       // Clave foránea que referencia a Componente
-  nombre        String     // Nombre del atributo (ej. "Marca")
-  valor         String?    // Valor del atributo (ej. "NETZSCH")
-  componente    Componente @relation(fields: [componenteId], references: [id]) // Relación con Componente
+  id           Int        @id @default(autoincrement())
+  componenteId Int
+  nombre       String
+  valor        String?
+  componente   Componente @relation(fields: [componenteId], references: [id])
 }
 
 model Repuesto {
-  id            Int       @id @default(autoincrement())
-  componenteId  Int       // Clave foránea que referencia a Componente
-  nombre        String     // Nombre del repuesto
-  descripcion   String?    // Descripción del repuesto
-  imageUrl      String?    // URL de la imagen (si se sube una)
-  images        Image[]   @relation("RepuestoImage") // Relación con Image
-  userId        Int       // Clave foránea que referencia a User
-  componente    Componente @relation(fields: [componenteId], references: [id]) // Relación con Componente
-  user          User       @relation(fields: [userId], references: [id]) // Relación con User
+  id           Int        @id @default(autoincrement())
+  componenteId Int
+  nombre       String
+  descripcion  String?
+  imageUrl     String?
+  userId       Int
+  componente   Componente @relation(fields: [componenteId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+  images       Image[]    @relation("RepuestoImage")
 }
 
 model Equipo {
-  id            Int       @id @default(autoincrement())
-  name          String
-  nombreMaximo  String
-  zonaId        Int       // Clave foránea que referencia a Zona
-  ubicacionId   Int       // Clave foránea que referencia a Ubicacion
-  ubicacionSinId String?    // Campo de texto para ubicaciones sin ID
-  zona          Zona      @relation(fields: [zonaId], references: [id]) // Relación con Zona
-  ubicacion     Ubicacion @relation(fields: [ubicacionId], references: [id]) // Relación con Ubicación
-  imageUrl      String?   // URL de la imagen (si se sube una)
-  images        Image[]   @relation("EquipoImage") // Relación con Image
-  componentes    Componente[] // Relación uno a muchos con Componente
-  ots           Ots[]    // Relación uno a muchos con Ots
-  OTs   OT[]
+  id             Int          @id @default(autoincrement())
+  name           String
+  nombreMaximo   String
+  zonaId         Int
+  ubicacionId    Int
+  imageUrl       String?
+  ubicacionSinId String?
+  componentes    Componente[]
+  ubicacion      Ubicacion    @relation(fields: [ubicacionId], references: [id])
+  zona           Zona         @relation(fields: [zonaId], references: [id])
+  OTbasico       OTbasico[]
+  ots            Ots[]
+  images         Image[]      @relation("EquipoImage")
 }
 
 model Image {
-  id          Int      @id @default(autoincrement())
-  url         String   // URL de la imagen
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  componentess   Componente []  @relation("ComponenteImage")
-  consumibless   OTConsumible []  @relation("ConsumibleImage")
-  repuestoss   Repuesto []  @relation("RepuestoImage")
-  equiposs   Equipo []  @relation("EquipoImage")
+  id           Int            @id @default(autoincrement())
+  url          String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  componentess Componente[]   @relation("ComponenteImage")
+  consumibless OTConsumible[] @relation("ConsumibleImage")
+  equiposs     Equipo[]       @relation("EquipoImage")
+  repuestoss   Repuesto[]     @relation("RepuestoImage")
+}
+
+model OTbasico {
+  id          Int        @id @default(autoincrement())
+  name        String
+  Temp        String
+  OTmaximo    String     @unique
+  estado      String
+  zonaId      Int?
+  ubicacionId Int?
+  equipoId    Int?
+  Equipo      Equipo?    @relation(fields: [equipoId], references: [id])
+  Ubicacion   Ubicacion? @relation(fields: [ubicacionId], references: [id])
+  Zona        Zona?      @relation(fields: [zonaId], references: [id])
+  Ots         Ots[]
 }

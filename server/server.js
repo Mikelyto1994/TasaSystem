@@ -23,7 +23,7 @@ const corsOptions = {
   methods: "GET,POST,PUT,DELETE", // Métodos HTTP permitidos
   allowedHeaders: "Content-Type,Authorization", // Encabezados permitidos
 };
-
+require('dotenv').config();  
 // Middleware para parsear JSON en las solicitudes
 app.use(express.json());
 // Usa el middleware cors en todas las rutas

@@ -16,27 +16,31 @@ const createOT = async (req, res) => {
 
   try {
     // Validar que los campos requeridos no sean nulos
-    if (!ottId || !zonaId || !userId) {
+    if (!zonaId || !userId) {
       return res.status(400).json({ message: "Faltan campos requeridos." });
     }
 
     // Validar que userId, zonaId y equipoId sean números válidos
     if (isNaN(userId) || isNaN(zonaId) || (equipoId && isNaN(equipoId))) {
-      return res
-        .status(400)
-        .json({ message: "ID de usuario, zona o equipo no válidos." });
+      return res.status(400).json({ message: "ID de usuario, zona o equipo no válidos." });
+    }
+
+    // Verificar si el OTmaximo existe en OTbasico
+    if (ottId) {
+      const otBasico = await prisma.oTbasico.findUnique({
+        where: { OTmaximo: ottId },
+      });
+
+      if (!otBasico) {
+        return res.status(400).json({ message: `OTmaximo '${ottId}' no existe en OTbasico.` });
+      }
     }
 
     // Crear la nueva OT
     const ot = await prisma.ots.create({
       data: {
-        ottId: String(ottId), // Asegúrate de que ottId sea una cadena
         OT: OT || null, // Si OT no se proporciona, se establece como null
-        equipoId: equipoId ? parseInt(equipoId, 10) : null, // Asegúrate de que sea un número o nulo
         descripcionEquipo,
-        zonaId: parseInt(zonaId, 10), // Asegúrate de que sea un número
-        ubicacionId: ubicacionId ? parseInt(ubicacionId, 10) : null, // Asegúrate de que sea un número o nulo
-        userId: parseInt(userId, 10), // Asegúrate de que userId sea un número
         ubicacionSinId,
         user: {
           connect: { id: parseInt(userId, 10) }, // Conectar el usuario existente
@@ -44,6 +48,10 @@ const createOT = async (req, res) => {
         zona: {
           connect: { id: parseInt(zonaId, 10) }, // Conectar la zona existente
         },
+        equipo: equipoId ? { connect: { id: parseInt(equipoId, 10) } } : undefined, // Conectar el equipo si se proporciona
+        ubicacion: ubicacionId ? { connect: { id: parseInt(ubicacionId, 10) } } : undefined, // Conectar la ubicación si se proporciona
+        // Conectar con OTbasico usando el campo OTmaximo
+        OTbasico: ottId ? { connect: { OTmaximo: String(ottId) } } : undefined,
       },
     });
 
@@ -54,42 +62,19 @@ const createOT = async (req, res) => {
 
     // Manejo de errores más detallado
     if (error.code === "P2002") {
-      return res
-        .status(409)
-        .json({ message: `El ottId '${ottId}' ya está en uso.` });
+      return res.status(409).json({ message: `El ottId '${ottId}' ya está en uso.` });
     }
 
     if (error.code === "P2025") {
-      return res
-        .status(404)
-        .json({ message: "No se encontró el registro relacionado." });
+      return res.status(404).json({ message: "No se encontró el registro relacionado." });
     }
 
     // Respuesta genérica para otros errores
-    res
-      .status(500)
-      .json({ message: "Error al crear OT", error: error.message });
+    res.status(500).json({ message: "Error al crear OT", error: error.message });
   }
 };
-
 // Obtener todas las OTs
-const getAllOTs = async (req, res) => {
-  try {
-    const ots = await prisma.ots.findMany({
-      include: {
-        ot: true, // Incluir información de la OT relacionada
-        user: true, // Incluir información del usuario
-        equipo: true, // Incluir información del equipo
-        ubicacion: true, // Incluir información de la ubicación
-        zona: true, // Incluir información de la zona
-      },
-    });
-    res.status(200).json(ots);
-  } catch (error) {
-    console.error("Error al obtener OTs:", error);
-    res.status(500).json({ message: "Error al obtener OTs" });
-  }
-};
+
 
 // Obtener una OT por ID
 const getOTById = async (req, res) => {
@@ -167,16 +152,40 @@ const deleteOT = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar OT" });
   }
 };
-
+const getAllOTs = async (req, res) => {
+  try {
+    const ots = await prisma.ots.findMany({
+      include: {
+        OTbasico: true, // Incluir información de la OT básica relacionada
+        user: true, // Incluir información del usuario
+        equipo: true, // Incluir información del equipo
+        ubicacion: true, // Incluir información de la ubicación
+        zona: true, // Incluir información de la zona
+        otConsumibles: true, // Incluir información de los consumibles relacionados
+      },
+    });
+    res.status(200).json(ots);
+  } catch (error) {
+    console.error("Error al obtener OTs:", error);
+    res.status(500).json({ message: "Error al obtener OTs" });
+  }
+};
 const searchOts = async (req, res) => {
-  const { startDate, endDate, zona, ubicacion, equipo } = req.query;
+  const { startDate, endDate, zona, ubicacion, equipo, scope, userId } = req.query; // Obtener userId de los parámetros de consulta
 
   // Validar parámetros de entrada
+  if (!userId || isNaN(Number(userId))) {
+    return res.status(400).json({ error: "El userId es requerido y debe ser un número." });
+  }
+
   if (startDate && isNaN(new Date(startDate))) {
     return res.status(400).json({ error: "La fecha de inicio no es válida." });
   }
   if (endDate && isNaN(new Date(endDate))) {
     return res.status(400).json({ error: "La fecha de fin no es válida." });
+  }
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    return res.status(400).json({ error: "La fecha de inicio debe ser anterior a la fecha de fin." });
   }
   if (zona && isNaN(Number(zona))) {
     return res.status(400).json({ error: "El ID de zona no es válido." });
@@ -192,10 +201,20 @@ const searchOts = async (req, res) => {
   const conditions = {};
 
   if (startDate) {
-    conditions.createdAt = { gte: new Date(startDate) };
+    conditions.otConsumibles = {
+      some: {
+        fechaCreacion: { gte: new Date(startDate) },
+      },
+    };
   }
   if (endDate) {
-    conditions.createdAt = { ...conditions.createdAt, lte: new Date(endDate) };
+    conditions.otConsumibles = {
+      ...conditions.otConsumibles,
+      some: {
+        ...conditions.otConsumibles?.some,
+        fechaCreacion: { lte: new Date(endDate) },
+      },
+    };
   }
   if (zona) {
     conditions.zonaId = Number(zona);
@@ -208,30 +227,77 @@ const searchOts = async (req, res) => {
   }
 
   try {
-    const ots = await prisma.ots.findMany({
-      where: conditions,
-      include: {
-        user: true,
-        equipo: true,
-        ubicacion: true,
-        zona: true,
-      },
-    });
+    let ots;
 
-    // Si no se encuentran órdenes de trabajo
-    if (ots.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No se encontraron órdenes de trabajo." });
+    if (scope === "misMovimientos") {
+      // Filtrar solo por el userId
+      ots = await prisma.ots.findMany({
+        where: {
+          userId: Number(userId), // Asegúrate de convertir a número
+          ...conditions,
+        },
+        include: {
+          OTbasico: true,
+          user: true,
+          equipo: true,
+          ubicacion: true,
+          zona: true,
+          otConsumibles: {
+            include: {
+              consumible: true,
+            },
+          },
+        },
+      });
+    } else if (scope === "miGrupo") {
+      // Obtener el areaId del usuario
+      const user = await prisma.user.findUnique({
+        where: { id: Number(userId) }, // Asegúrate de convertir a número
+        select: { areaId: true },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado." });
+      }
+
+      // Filtrar por el areaId
+      ots = await prisma.ots.findMany({
+        where: {
+          userId: {
+            in: await prisma.user.findMany({
+              where: { areaId: user.areaId },
+              select: { id: true },
+            }).then(users => users.map(u => u.id)),
+          },
+          ...conditions,
+        },
+        include: {
+          OTbasico: true,
+          user: true,
+          equipo: true,
+          ubicacion: true,
+          zona: true,
+          otConsumibles: {
+            include: {
+              consumible: true,
+            },
+          },
+        },
+      });
+    } else {
+      return res.status(400).json({ error: "El valor de scope no es válido." });
     }
 
-    res.json(ots);
+    if (ots.length === 0) {
+      return res.status(404).json({ message: "No se encontraron órdenes de trabajo." });
+    }
+
+    res.status(200).json(ots);
   } catch (error) {
     console.error("Error al buscar órdenes de trabajo:", error);
     res.status(500).json({
-      error: "Error al buscar órdenes de trabajo",
+      message: "Error al buscar órdenes de trabajo",
       details: error.message,
-      stack: error.stack, // Agregar el stack trace para más detalles
     });
   }
 };
