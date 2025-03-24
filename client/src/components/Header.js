@@ -103,14 +103,7 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
             className="text-lg font-semibold py-2 text-gray-700 hover:text-orange-500"
             onClick={() => setMenuOpen(false)}
           >
-            Ingreso/Egreso
-          </Link>
-          <Link
-            to="/reporte"
-            className="text-lg font-semibold py-2 text-gray-700 hover:text-orange-500"
-            onClick={() => setMenuOpen(false)}
-          >
-            Reporte
+            Registro
           </Link>
           <Link
             to="/general"
