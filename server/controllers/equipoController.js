@@ -1,7 +1,4 @@
-// controllers/equipoController.js
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
-
+const prisma = require("./prisma");
 // Crear un nuevo equipo
 const createEquipo = async (req, res) => {
   const { name, nombreMaximo, zonaId, ubicacionId, imageUrl } = req.body;

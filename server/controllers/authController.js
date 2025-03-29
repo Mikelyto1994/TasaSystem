@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const prisma = require("./prisma"); // Importa desde el archivo prisma.j
+const prisma = require("./prisma");
 
 // Función de registro de usuario
 const register = async (req, res) => {

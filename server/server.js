@@ -16,14 +16,13 @@ const ottRoutes = require("./routes/OTTRoute");
 const otConsumibleRoutes = require("./routes/otConsumibleRoutes");
 // Configuración de la aplicación
 const app = express();
-
+require('dotenv').config();
 // Configura CORS
 const corsOptions = {
   origin: "*", // Permite solicitudes desde cualquier origen mientras pruebas
   methods: "GET,POST,PUT,DELETE", // Métodos HTTP permitidos
   allowedHeaders: "Content-Type,Authorization", // Encabezados permitidos
 };
-require('dotenv').config();  
 // Middleware para parsear JSON en las solicitudes
 app.use(express.json());
 // Usa el middleware cors en todas las rutas
@@ -67,6 +66,19 @@ app.get("/user", async (req, res) => {
     console.error("Error al obtener los usuarios:", error);
     res.status(500).json({ message: "Error al obtener los usuarios" });
   }
+});
+
+// Cierre de conexiones al detener el servidor
+process.on('SIGINT', async () => {
+  console.log("Cerrando conexiones a la base de datos...");
+  await prisma.$disconnect(); // Cierra las conexiones de Prisma
+  process.exit(0); // Finaliza el proceso
+});
+
+process.on('SIGTERM', async () => {
+  console.log("Cerrando conexiones a la base de datos...");
+  await prisma.$disconnect(); // Cierra las conexiones de Prisma
+  process.exit(0); // Finaliza el proceso
 });
 
 // Iniciar servidor

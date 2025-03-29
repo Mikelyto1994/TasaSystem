@@ -173,6 +173,7 @@ const DetallesConsumibles = ({ consumibles, userId }) => {
     setEditingConsumible(consumible);
     setUpdatedData({
       reservaSap: consumible.reservaSap || '',
+      comentarios: consumible.comentarios || '',
     });
   };
 
@@ -189,6 +190,7 @@ const DetallesConsumibles = ({ consumibles, userId }) => {
       const url = `${process.env.REACT_APP_API_URL}otc/${editingConsumible.id}`; // Construir la URL
       const body = {
         reservaSap: updatedData.reservaSap,
+        comentarios: updatedData.comentarios, 
       };
 
       // Mostrar la URL y el cuerpo en la consola
@@ -211,46 +213,60 @@ const DetallesConsumibles = ({ consumibles, userId }) => {
     <table className="min-w-full bg-white border border-gray-300">
       <thead>
         <tr>
+        <th className="py-2 px-4 border-b">Código</th>
           <th className="py-2 px-4 border-b">Nombre Consumible</th>
           <th className="py-2 px-4 border-b">Unidad de Medida</th>
           <th className="py-2 px-4 border-b">Cantidad</th>
           <th className="py-2 px-4 border-b">Reserva SAP</th>
+          <th className="py-2 px-4 border-b">Coment.</th>
           <th className="py-2 px-4 border-b">Acción</th>
         </tr>
       </thead>
       <tbody>
         {consumibles.map((consumible) => (
           <tr key={consumible.id}>
-            <td>{consumible.consumible?.name || 'N/A'}</td>
-            <td>{consumible.consumible?.unidadMedida || 'N/A'}</td>
-            <td>{consumible.cantidad || 0}</td>
-            <td>
-              {editingConsumible?.id === consumible.id ? (
-                <input
-                  type="text"
-                  name="reservaSap"
-                  value={updatedData.reservaSap}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 p-1"
-                />
-              ) : (
-                consumible.reservaSap || ''
-              )}
-            </td>
-            <td>
-            {["1", "2", "3"].includes(userId) && ( // Verificar si el userId está en el rango permitido
-                  editingConsumible?.id === consumible.id ? (
-                  <button onClick={handleSave} className="text-green-600 hover:underline">
-                    Guardar
-                  </button>
-                ) : (
-                  <button onClick={() => handleEditClick(consumible)} className="text-blue-600 hover:underline">
-                    Editar
-                  </button>
-                )
-              )}
-            </td>
-          </tr>
+          <td>{consumible.consumible?.codMaximo || 'N/A'}</td>
+          <td>{consumible.consumible?.name || 'N/A'}</td>
+          <td>{consumible.consumible?.unidadMedida || 'N/A'}</td>
+          <td>{consumible.cantidad || 0}</td>
+          <td>
+            {editingConsumible?.id === consumible.id && ["1", "2", "3"].includes(userId) ? (
+              <input
+                type="text"
+                name="reservaSap"
+                value={updatedData.reservaSap}
+                onChange={handleInputChange}
+                className="border border-gray-300 p-1"
+              />
+            ) : (
+              consumible.reservaSap || ''
+            )}
+          </td>
+          <td>
+            {editingConsumible?.id === consumible.id ? (
+              <input
+                type="text"
+                name="comentarios" // Asegúrate de que el nombre coincida
+                value={updatedData.comentarios || ''} // Maneja el valor
+                onChange={handleInputChange}
+                className="border border-gray-300 p-1"
+              />
+            ) : (
+              consumible.comentarios || 'N/A' // Mostrar 'N/A' si no hay comentarios
+            )}
+          </td>
+          <td>
+            {editingConsumible?.id === consumible.id ? (
+              <button onClick={handleSave} className="text-green-600 hover:underline">
+                Guardar
+              </button>
+            ) : (
+              <button onClick={() => handleEditClick(consumible)} className="text-blue-600 hover:underline">
+                Editar
+              </button>
+            )}
+          </td>
+        </tr>
         ))}
       </tbody>
     </table>
@@ -379,7 +395,7 @@ const DetallesConsumibles = ({ consumibles, userId }) => {
       {/* Mostrar resultados */}
       {loading && <p className="text-center mt-4">Cargando...</p>}
       {!loading && ots.length > 0 && (
-        <div className ="mt-6">
+        <div className ="mt-6 overflow-x-auto">
           <h2 className="text-xl font-bold mb-4">Órdenes de Trabajo Encontradas</h2>
           <table className="min-w-full bg-white border border-gray-300">
             <thead>

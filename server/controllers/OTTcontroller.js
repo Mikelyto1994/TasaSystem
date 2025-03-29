@@ -1,6 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
-
+const prisma = require("./prisma");
 // Crear una nueva OT
 const createOTT = async (req, res) => {
   const { name, OTmaximo, estado } = req.body;

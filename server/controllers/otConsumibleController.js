@@ -1,7 +1,4 @@
-// controllers/otConsumibleController.js
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
-
+const prisma = require("./prisma");
 // Crear un nuevo OTConsumible
 const createOTConsumible = async (req, res) => {
   const {

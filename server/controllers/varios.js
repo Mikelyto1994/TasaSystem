@@ -1,6 +1,4 @@
-// controllers/locationController.js
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("./prisma");
 
 // Obtener todas las áreas
 const getAllAreas = async (req, res) => {

@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
+const prisma = require("./prisma");
 // Obtener los datos de un usuario específico
 const getUser  = async (req, res) => {
   try {
