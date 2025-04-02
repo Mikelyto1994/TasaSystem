@@ -8,19 +8,21 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  firstName     String
-  lastName      String
-  areaId        Int
-  password      String
-  username      String         @unique
-  isAdmin       Boolean        @default(false)
-  isDeleted     Boolean        @default(false)
-  componentes   Componente[]
-  otConsumibles OTConsumible[]
-  ots           Ots[]
-  repuestos     Repuesto[]
-  area          Area           @relation(fields: [areaId], references: [id])
+  id                Int                 @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  areaId            Int
+  password          String
+  username          String              @unique
+  isAdmin           Boolean             @default(false)
+  isDeleted         Boolean             @default(false)
+  componentes       Componente[]
+  otConsumibles     OTConsumible[]
+  ots               Ots[]
+  repuestos         Repuesto[]
+  area              Area                @relation(fields: [areaId], references: [id])
+  Atributo          Atributo[]
+  AtributoHistorial AtributoHistorial[]
 }
 
 model Area {
@@ -110,11 +112,26 @@ model Componente {
 }
 
 model Atributo {
-  id           Int        @id @default(autoincrement())
-  componenteId Int
-  nombre       String
-  valor        String?
-  componente   Componente @relation(fields: [componenteId], references: [id])
+  id                Int                 @id @default(autoincrement())
+  componenteId      Int
+  nombre            String
+  valor             String?
+  userId            Int? // Nuevo campo para rastrear el usuario que hizo el cambio
+  componente        Componente          @relation(fields: [componenteId], references: [id])
+  user              User?               @relation(fields: [userId], references: [id]) // Relación opcional con User
+  AtributoHistorial AtributoHistorial[]
+  images           Image[]             @relation("AtributoImage") // Nueva relación con Image
+}
+
+model AtributoHistorial {
+  id            Int      @id @default(autoincrement())
+  atributoId    Int
+  valorAnterior String?
+  valorNuevo    String?
+  userId        Int
+  fechaCambio   DateTime @default(now())
+  atributo      Atributo @relation(fields: [atributoId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
 }
 
 model Repuesto {
@@ -154,6 +171,7 @@ model Image {
   consumibless OTConsumible[] @relation("ConsumibleImage")
   equiposs     Equipo[]       @relation("EquipoImage")
   repuestoss   Repuesto[]     @relation("RepuestoImage")
+  atributos    Atributo[]     @relation("AtributoImage") // Nueva relación con Atributo
 }
 
 model OTbasico {

@@ -66,6 +66,13 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
           >
             General
           </Link>
+          
+          <Link
+            to="/reporte"
+            className="text-lg font-semibold transition-colors duration-300 hover:text-orange-500"
+          >
+            Atributos
+          </Link>
         </div>
 
         {/* Icono de hamburguesa */}
@@ -111,6 +118,13 @@ const Header = ({ setAuthenticated, setUserName, userName }) => {
             onClick={() => setMenuOpen(false)}
           >
             General
+          </Link>
+          <Link
+            to="/reporte"
+            className="text-lg font-semibold py-2 text-gray-700 hover:text-orange-500"
+            onClick={() => setMenuOpen(false)}
+          >
+            Atributos
           </Link>
         </div>
       )}

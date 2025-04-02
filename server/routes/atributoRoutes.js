@@ -6,6 +6,7 @@ const {
   getAtributoById,
   updateAtributo,
   deleteAtributo,
+  getAtributoHistorial,
 } = require('../controllers/atributoController');
 const authMiddleware = require('../middlewares/auth'); // Importar el middleware de autenticación
 
@@ -15,7 +16,8 @@ const router = express.Router();
 router.post('/', authMiddleware, createAtributo); // Crear atributo
 router.get('/', getAllAtributos); // Obtener todos los atributos
 router.get('/:id', getAtributoById); // Obtener atributo por ID
-router.put('/:id', authMiddleware, updateAtributo); // Actualizar atributo
+router.put('/:id', updateAtributo); // Actualizar atributo
 router.delete('/:id', authMiddleware, deleteAtributo); // Eliminar atributo
+router.get('/:id/historial', getAtributoHistorial); 
 
 module.exports = router;

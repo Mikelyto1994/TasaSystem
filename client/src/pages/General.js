@@ -412,7 +412,7 @@ const DetallesConsumibles = ({ consumibles, userId }) => {
   <React.Fragment key={ot.id}>
     <tr className="mb-10"> {/* Agregar margen inferior a la fila */}
       <td className="py-2 px-4 border-b text-center">{ot.ottId || 'N/A'}</td>
-      <td className="py-2 px-4 border-b text-center">{ot.descripcionEquipo || 'Sin descripción'}</td>
+      <td className="py-2 px-4 border-b text-center">{ot.OTbasico?.name || 'Sin descripción'}</td>
       <td className="py-2 px-4 border-b text-center">{ot.zona.name}</td>
       <td className="py-2 px-4 border-b text-center">{ot.ubicacion ? ot.ubicacion.name : 'N/A'}</td>
       <td className="py-2 px-4 border-b text-center">

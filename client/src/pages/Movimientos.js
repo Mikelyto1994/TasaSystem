@@ -273,100 +273,84 @@ const availableConsumibles = filteredConsumibles.filter(
   const handleSubmitOT = async (e) => {
     e.preventDefault();
     if (isSubmittingOT) return;
-
+  
     setIsSubmittingOT(true);
-
-    // Acumular mensajes de error
+  
     const errorMessages = [];
-
-    // Validación de campos
-    if (!zonaId) {
-      errorMessages.push("Zona");
+  
+    // Validaciones
+    if (!zonaId) errorMessages.push("Zona");
+    if (!ubicacionId && !ubicacionSinId) errorMessages.push("Ubicación o Ubicación Sin");
+    if (!otValue && !otId) errorMessages.push("al menos un nombre OT o una OT no asignada");
+    if (!equipoId && !descripcionEquipo) errorMessages.push("ID del Equipo o Descripción del Equipo");
+    if (selectedConsumibles.length === 0 || selectedConsumibles.every(c => !c.name)) {
+      errorMessages.push("Debes seleccionar al menos un consumible con un nombre válido.");
     }
-
-    if (!ubicacionId && !ubicacionSinId) {
-      errorMessages.push("al menos uno de Ubicación o Ubicación Sin");
-    }
-
-    if (!otValue && !otId) {
-      errorMessages.push("al menos un nombre OT o una OT no asignada");
-    }
-
-    if (!equipoId && !descripcionEquipo) {
-      errorMessages.push(
-        "al menos uno de los campos ID del Equipo o Descripción del Equipo"
-      );
-    }
-
-    // Validar que al menos un consumible esté seleccionado y tenga un nombre
-    if (
-      selectedConsumibles.length === 0 ||
-      selectedConsumibles.every((c) => !c.name)
-    ) {
-      errorMessages.push(
-        "Debes seleccionar al menos un consumible con un nombre válido."
-      );
-    }
-
-    // Si hay mensajes de error, mostrar alerta y salir
+  
     if (errorMessages.length > 0) {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: `Por favor, complete el campo: ${errorMessages.join(", ")}.`, // Unir todos los mensajes en una sola cadena
+        text: `Por favor, complete el campo: ${errorMessages.join(", ")}.`,
       });
       setIsSubmittingOT(false);
       return;
     }
-
+  
     try {
       const otData = {
-        ottId: otId, // Usar el ID de la OT seleccionada
+        ottId: otId,
         OT: String(otValue),
         equipoId: parseInt(equipoId, 10),
         descripcionEquipo,
         zonaId: parseInt(zonaId, 10),
         ubicacionId: parseInt(ubicacionId, 10),
         ubicacionSinId,
-        userId: localStorage.getItem("userId"), // Asumiendo que el ID del usuario está en localStorage
+        userId: localStorage.getItem("userId"),
       };
-
-      // Log del cuerpo de la solicitud de OT
+  
       console.log("Cuerpo de la solicitud de OT:", otData);
-
-      // Enviar la OT al backend con el token de autorización
-      const token = localStorage.getItem("token"); // Obtener el token del localStorage
-      const createdOT = await createOT(otData, token); // Pasar el token a la función createOT
-      console.log("OT creada:", createdOT); // Para depuración
-
-      // Enviar cada consumible asociado a la OT
+  
+      const token = localStorage.getItem("token");
+      const createdOT = await createOT(otData, token);
+      console.log("OT creada:", createdOT);
+  
       for (const consumible of selectedConsumibles) {
         const otConsumibleData = {
-          consumibleId: consumible.id, // Asegúrate de que el consumible tenga un ID
+          consumibleId: consumible.id,
           nombreConsumible: consumible.name,
           unidadMedida: consumible.unidadMedida,
           cantidad: consumible.cantidad,
-          otId: createdOT.id, // Usar el ID de la OT creada
+          otId: createdOT.id,
           userId: localStorage.getItem("userId"),
-          // Puedes agregar otros campos si es necesario
         };
-
-        // Log del cuerpo de la solicitud de OTConsumible
-        console.log(
-          "Cuerpo de la solicitud de OTConsumible:",
-          otConsumibleData
-        );
-
-        await createOTConsumible(otConsumibleData, token); // Pasar el token a la función createOTConsumible
+  
+        console.log("Cuerpo de la solicitud de OTConsumible:", otConsumibleData);
+  
+        await createOTConsumible(otConsumibleData, token);
       }
-
+  
+      // 🔹 Generar mensaje de WhatsApp
+      const numeroWhatsApp = "+51987778455"; // Reemplázalo por el número del destinatario
+      const mensaje = encodeURIComponent(
+        `Hola, para la OT número: ${otId}, se requieren estos consumibles:\n\n` +
+        selectedConsumibles.map((c, index) =>
+          `(${index + 1}) ${c.codMaximo} - ${c.name} (${c.cantidad} ${c.unidadMedida})`
+        ).join("\n")
+      );
+  
+      const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`;
+  
+      // 🔹 Abrir WhatsApp con el mensaje prellenado
+      window.open(urlWhatsApp, "_blank");
+  
       Swal.fire({
         icon: "success",
         title: "Éxito",
         text: "OT y consumibles registrados con éxito.",
       });
-
-      // Limpiar campos de OT
+  
+      // 🔹 Limpiar los campos
       setOtName("");
       setOtValue("");
       setEquipoId("");
@@ -374,7 +358,9 @@ const availableConsumibles = filteredConsumibles.filter(
       setZonaId("");
       setUbicacionId("");
       setUbicacionSinId("");
-      setSelectedConsumibles([]); // Limpiar consumibles seleccionados
+      setSelectedConsumibles([]);
+      // Limpiar el valor del campo de búsqueda de OT
+setSearchOt(""); // Limpiar el término de búsqueda
     } catch (err) {
       console.error("Error al registrar OT o consumibles:", err);
       Swal.fire({
@@ -384,51 +370,11 @@ const availableConsumibles = filteredConsumibles.filter(
       });
     } finally {
       setIsSubmittingOT(false);
+
     }
   };
-  // Función para manejar el envío de consumibles
-  const handleSubmitConsumible = async (e) => {
-    e.preventDefault();
-    if (isSubmittingConsumible) return;
   
-    setIsSubmittingConsumible(true);
-  
-    // Validar que al menos un consumible tenga datos
-    if (
-      selectedConsumibles.length === 0 ||
-      selectedConsumibles.some((c) => !c.name || !c.unidadMedida || !c.cantidad)
-    ) {
-      toast.error("Por favor, complete todos los campos de los consumibles.");
-      setIsSubmittingConsumible(false);
-      return;
-    }
-  
-    try {
-      for (const consumible of selectedConsumibles) {
-        const otConsumibleData = {
-          consumibleId: consumible.id || null, // Asegúrate de que el consumible tenga un ID
-          nombreConsumible: consumible.name,
-          unidadMedida: consumible.unidadMedida,
-          cantidad: parseFloat(consumible.cantidad), // Asegúrate de que sea un número
-          otId, // Asegúrate de tener el ID de la OT
-          userId: localStorage.getItem("userId"), // Asegúrate de que sea un número
-        };
-  
-        console.log("Datos a enviar:", otConsumibleData); // Para depuración
-  
-        const response = await createOTConsumible(otConsumibleData);
-        console.log("Respuesta del servidor:", response); // Para depuración
-      }
-      toast.success("Consumibles registrados con éxito.");
-      // Limpiar campos de consumible
-      setSelectedConsumibles([{ name: "", unidadMedida: "", cantidad: 1 }]); // Reiniciar el estado
-    } catch (err) {
-      toast.error("Error al registrar los consumibles.");
-      console.error("Error al registrar consumibles:", err);
-    } finally {
-      setIsSubmittingConsumible(false);
-    }
-  };
+
 
   const [newConsumible, setNewConsumible] = useState({
     name: "",

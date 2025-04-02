@@ -58,26 +58,63 @@ const getAtributoById = async (req, res) => {
 };
 
 // Actualizar un atributo
+// Actualizar un atributo
 const updateAtributo = async (req, res) => {
   const { id } = req.params;
-  const { nombre, valor } = req.body;
+  const { nombre, valor, userId } = req.body;
 
   try {
-    const atributo = await prisma.atributo.update({
+    // Verificar si el token es válido
+    if (!req.headers.authorization) {
+      return res.status(401).json({ message: "Solicitud no autorizada" });
+    }
+
+    // Obtener el atributo actual para registrar el cambio
+    const atributoActual = await prisma.atributo.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!atributoActual) {
+      return res.status(404).json({ message: "Atributo no encontrado" });
+    }
+
+    // Obtener la fecha actual y ajustarla a UTC-5
+    const fechaCambio = new Date();
+    fechaCambio.setHours(fechaCambio.getHours() - 5); // Ajustar a UTC-5
+
+    // Crear un registro en el historial antes de actualizar
+    await prisma.atributoHistorial.create({
+      data: {
+        atributoId: atributoActual.id,
+        valorAnterior: atributoActual.valor,
+        valorNuevo: valor,
+        userId: userId, // Guardar el userId que hizo el cambio
+        fechaCambio: fechaCambio, // Registrar la fecha ajustada
+      },
+    });
+
+    // Actualizar el atributo
+    const updatedAtributo = await prisma.atributo.update({
       where: { id: parseInt(id) },
       data: {
         nombre,
         valor,
+        userId: userId, // Opcional: actualizar el userId si es necesario
       },
     });
 
-    res.status(200).json(atributo);
+    res.status(200).json(updatedAtributo);
   } catch (error) {
     console.error("Error al actualizar atributo:", error);
-    res.status(500).json({ message: "Error al actualizar atributo" });
+    if (error.code === "P2025") {
+      return res.status(404).json({ message: "Atributo no encontrado" });
+    } else if (error.code === "P2002") {
+      return res.status(400).json({ message: "Datos inválidos" });
+    } else {
+      return res.status(500).json({ message: "Error al actualizar atributo" });
+    }
   }
 };
-
 // Eliminar un atributo
 const deleteAtributo = async (req, res) => {
   const { id } = req.params;
@@ -92,7 +129,30 @@ const deleteAtributo = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar atributo" });
   }
 };
+const getAtributoHistorial = async (req, res) => {
+  const { id } = req.params; // ID del atributo
 
+  try {
+    const historial = await prisma.atributoHistorial.findMany({
+      where: { atributoId: parseInt(id) },
+      include: {
+        user: true, // Incluir el usuario que hizo el cambio
+      },
+      orderBy: {
+        fechaCambio: 'desc', // Ordenar por fecha de cambio, más reciente primero
+      },
+    });
+
+    if (historial.length === 0) {
+      return res.status(404).json({ message: "No se encontró historial para este atributo." });
+    }
+
+    res.status(200).json(historial);
+  } catch (error) {
+    console.error("Error al obtener el historial del atributo:", error);
+    res.status(500).json({ message: "Error al obtener el historial del atributo." });
+  }
+};
 // Exportar las funciones del controlador
 module.exports = {
   createAtributo,
@@ -100,4 +160,5 @@ module.exports = {
   getAtributoById,
   updateAtributo,
   deleteAtributo,
+  getAtributoHistorial,
 };
