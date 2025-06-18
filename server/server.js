@@ -68,6 +68,10 @@ app.get("/user", async (req, res) => {
   }
 });
 
+app.get('/ping', (req, res) => {
+  res.send('OK');
+});
+
 // Cierre de conexiones al detener el servidor
 process.on('SIGINT', async () => {
   console.log("Cerrando conexiones a la base de datos...");
@@ -80,6 +84,7 @@ process.on('SIGTERM', async () => {
   await prisma.$disconnect(); // Cierra las conexiones de Prisma
   process.exit(0); // Finaliza el proceso
 });
+
 
 // Iniciar servidor
 app.listen(3001, () => {
